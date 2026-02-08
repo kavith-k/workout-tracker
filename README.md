@@ -1,42 +1,55 @@
-# sv
+# Workout Tracker
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+A self-hosted, mobile-first workout logging app with progressive overload tracking. Built with SvelteKit, SQLite, and Docker.
 
-## Creating a project
+## Requirements
 
-If you're seeing this, you've probably already done this step. Congrats!
+- Node.js 22+
+- `DATABASE_PATH` environment variable pointing to a SQLite database file
 
-```sh
-# create a new project
-npx sv create my-app
-```
-
-To recreate this project with the same configuration:
+## Development
 
 ```sh
-# recreate this project
-npx sv create --template minimal --types ts --add prettier eslint vitest="usages:unit,component" playwright tailwindcss="plugins:none" sveltekit-adapter="adapter:node" drizzle="database:sqlite+sqlite:better-sqlite3" mcp="ide:claude-code,opencode,other+setup:local" --install npm ./
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
+cp .env.example .env
+npm install
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
 
-## Building
+## Deployment with Docker
 
-To create a production version of your app:
+### Using Docker Compose (recommended)
 
 ```sh
-npm run build
+docker compose up -d
 ```
 
-You can preview the production build with `npm run preview`.
+This builds the image, starts the container on port 3000, and persists the database in a named volume (`workout-data`).
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+### Using Docker directly
+
+```sh
+docker build -t workout-tracker .
+docker run -d \
+  -p 3000:3000 \
+  -e DATABASE_PATH=/data/workout-tracker.db \
+  -v workout-data:/data \
+  workout-tracker
+```
+
+### Using the pre-built image from GHCR
+
+```sh
+docker run -d \
+  -p 3000:3000 \
+  -e DATABASE_PATH=/data/workout-tracker.db \
+  -v workout-data:/data \
+  ghcr.io/kavith-k/workout-tracker:latest
+```
+
+### Environment variables
+
+| Variable        | Required | Description                                                     |
+| --------------- | -------- | --------------------------------------------------------------- |
+| `DATABASE_PATH` | Yes      | Path to SQLite database file (e.g., `/data/workout-tracker.db`) |
+
+The database file and directory are created automatically on first run.
