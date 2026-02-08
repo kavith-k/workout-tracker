@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: ['*']
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Playwright browsers
+        run: npx playwright install firefox --with-deps
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run check
+
+      - name: Unit tests
+        run: npm run test:unit -- --run
+
+      - name: Build
+        run: npm run build
+        env:
+          DATABASE_PATH: ./data/build.db
+
+      - name: E2E tests
+        run: |
+          mkdir -p data
+          npm run test:e2e
+        env:
+          DATABASE_PATH: ./data/test.db

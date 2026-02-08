@@ -1,0 +1,11 @@
+node_modules
+.git
+.svelte-kit
+build
+data
+test-results
+.env
+.env.local
+*.db
+.claude
+.vscode

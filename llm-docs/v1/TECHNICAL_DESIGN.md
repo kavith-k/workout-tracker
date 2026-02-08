@@ -987,9 +987,14 @@ workout-tracker/
 │       ├── exercise-library.spec.ts
 │       ├── export.spec.ts
 │       └── resume-workout.spec.ts
+├── .github/
+│   └── workflows/
+│       ├── ci.yml                  # CI pipeline (lint, check, test, build)
+│       └── cd.yml                  # CD pipeline (Docker build, push to GHCR)
 ├── data/                           # Local dev database (gitignored)
 ├── .env                            # Local dev env vars (gitignored)
 ├── .env.example                    # Template for env vars
+├── .dockerignore                   # Docker build context exclusions
 ├── drizzle.config.ts               # Drizzle migration config
 ├── svelte.config.js
 ├── tailwind.config.js
@@ -997,8 +1002,8 @@ workout-tracker/
 ├── vitest.config.ts                # Vitest configuration
 ├── playwright.config.ts            # Playwright configuration
 ├── package.json
-├── Dockerfile
-├── docker-compose.yml
+├── Dockerfile                      # Multi-stage Docker build
+├── docker-compose.yml              # Docker Compose with volume persistence
 ├── REQUIREMENTS.md
 ├── TECHNICAL_DESIGN.md
 └── README.md
@@ -1006,18 +1011,17 @@ workout-tracker/
 
 ---
 
-## Next Steps
+## Implementation Progress
 
-This technical design should be broken down into implementation tasks. Suggested order:
-
-1. **Project scaffolding** - SvelteKit, Tailwind, shadcn-svelte, Vitest, Playwright setup
-2. **Database setup** - Drizzle, schema, migrations, in-memory test DB helper
-3. **Core layout** - App shell, hamburger menu, navigation
-4. **Programs CRUD** - Create, edit, list, delete, duplicate, activate programs
-5. **Exercise library** - Auto-population, list, edit, delete
-6. **Workout flow** - Start, log sets, stop, summary
-7. **Progressive overload** - Previous/max queries and display
-8. **History views** - By date, by exercise, delete logs
-9. **PWA/Offline** - Service worker, IndexedDB queue, sync
-10. **Export** - JSON and CSV download
-11. **Polish** - Empty states, loading states, error handling
+1. ~~**Project scaffolding**~~ - SvelteKit, Tailwind, shadcn-svelte, Vitest, Playwright setup
+2. ~~**Database setup**~~ - Drizzle, schema, migrations, in-memory test DB helper
+3. ~~**Docker, CI/CD**~~ - Dockerfile, Docker Compose, GitHub Actions CI/CD pipelines
+4. **Core layout** - App shell, hamburger menu, navigation _(next)_
+5. **Programs CRUD** - Create, edit, list, delete, duplicate, activate programs
+6. **Exercise library** - Auto-population, list, edit, delete
+7. **Workout flow** - Start, log sets, stop, summary
+8. **Progressive overload** - Previous/max queries and display
+9. **History views** - By date, by exercise, delete logs
+10. **PWA/Offline** - Service worker, IndexedDB queue, sync
+11. **Export** - JSON and CSV download
+12. **Polish** - Empty states, loading states, error handling

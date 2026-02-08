@@ -1,0 +1,14 @@
+services:
+  workout-tracker:
+    build:
+      context: .
+    ports:
+      - '3000:3000'
+    environment:
+      DATABASE_PATH: /data/workout-tracker.db
+    volumes:
+      - workout-data:/data
+    restart: unless-stopped
+
+volumes:
+  workout-data:
