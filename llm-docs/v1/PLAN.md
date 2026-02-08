@@ -72,7 +72,7 @@ Set up the Dockerfile, Docker Compose, and GitHub Actions workflows. The Docker 
 - Create `.github/workflows/ci.yml` for the CI pipeline
 - Create `.github/workflows/cd.yml` for the CD pipeline
 - Add ESLint and Prettier configs to the project (if not already done in Phase 1)
-- Ensure all `npm run` scripts are defined: `lint`, `format:check`, `check` (svelte-check), `test:unit`, `test:e2e`, `build`
+- Ensure all `npm run` scripts are defined: `lint` (includes Prettier check), `check` (svelte-check), `test:unit`, `test:e2e`, `build`
 
 **Done when**: `docker compose up` starts the app locally, data persists across container restarts. Pushing code triggers CI checks. Merging to main builds and pushes a Docker image to GHCR.
 
