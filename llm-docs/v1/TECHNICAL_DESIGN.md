@@ -8,14 +8,14 @@ This document outlines the technical architecture for the Workout Tracker applic
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| Framework | SvelteKit 2 (Svelte 5) |
-| Styling | TailwindCSS + shadcn-svelte |
-| Database | SQLite |
-| ORM | Drizzle ORM |
-| Runtime | Node.js (Docker container) |
-| Offline | PWA with Service Worker |
+| Layer     | Technology                  |
+| --------- | --------------------------- |
+| Framework | SvelteKit 2 (Svelte 5)      |
+| Styling   | TailwindCSS + shadcn-svelte |
+| Database  | SQLite                      |
+| ORM       | Drizzle ORM                 |
+| Runtime   | Node.js (Docker container)  |
+| Offline   | PWA with Service Worker     |
 
 ---
 
@@ -101,67 +101,103 @@ This document outlines the technical architecture for the Workout Tracker applic
 import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
 
 export const programs = sqliteTable('programs', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  name: text('name').notNull(),
-  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(false),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+	id: integer('id').primaryKey({ autoIncrement: true }),
+	name: text('name').notNull(),
+	isActive: integer('is_active', { mode: 'boolean' }).notNull().default(false),
+	createdAt: integer('created_at', { mode: 'timestamp' })
+		.notNull()
+		.$defaultFn(() => new Date()),
+	updatedAt: integer('updated_at', { mode: 'timestamp' })
+		.notNull()
+		.$defaultFn(() => new Date())
 });
 
 export const workoutDays = sqliteTable('workout_days', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  programId: integer('program_id').notNull().references(() => programs.id, { onDelete: 'cascade' }),
-  name: text('name').notNull(),
-  sortOrder: integer('sort_order').notNull(),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+	id: integer('id').primaryKey({ autoIncrement: true }),
+	programId: integer('program_id')
+		.notNull()
+		.references(() => programs.id, { onDelete: 'cascade' }),
+	name: text('name').notNull(),
+	sortOrder: integer('sort_order').notNull(),
+	createdAt: integer('created_at', { mode: 'timestamp' })
+		.notNull()
+		.$defaultFn(() => new Date())
 });
 
 export const exercises = sqliteTable('exercises', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  name: text('name').notNull().unique(),
-  unitPreference: text('unit_preference', { enum: ['kg', 'lbs'] }).notNull().default('kg'),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+	id: integer('id').primaryKey({ autoIncrement: true }),
+	name: text('name').notNull().unique(),
+	unitPreference: text('unit_preference', { enum: ['kg', 'lbs'] })
+		.notNull()
+		.default('kg'),
+	createdAt: integer('created_at', { mode: 'timestamp' })
+		.notNull()
+		.$defaultFn(() => new Date())
 });
 
 export const dayExercises = sqliteTable('day_exercises', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  workoutDayId: integer('workout_day_id').notNull().references(() => workoutDays.id, { onDelete: 'cascade' }),
-  exerciseId: integer('exercise_id').notNull().references(() => exercises.id),
-  setsCount: integer('sets_count').notNull().default(3),
-  sortOrder: integer('sort_order').notNull(),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+	id: integer('id').primaryKey({ autoIncrement: true }),
+	workoutDayId: integer('workout_day_id')
+		.notNull()
+		.references(() => workoutDays.id, { onDelete: 'cascade' }),
+	exerciseId: integer('exercise_id')
+		.notNull()
+		.references(() => exercises.id),
+	setsCount: integer('sets_count').notNull().default(3),
+	sortOrder: integer('sort_order').notNull(),
+	createdAt: integer('created_at', { mode: 'timestamp' })
+		.notNull()
+		.$defaultFn(() => new Date())
 });
 
 export const workoutSessions = sqliteTable('workout_sessions', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  programId: integer('program_id').references(() => programs.id, { onDelete: 'set null' }),
-  workoutDayId: integer('workout_day_id').references(() => workoutDays.id, { onDelete: 'set null' }),
-  programName: text('program_name').notNull(),
-  dayName: text('day_name').notNull(),
-  status: text('status', { enum: ['in_progress', 'completed'] }).notNull().default('in_progress'),
-  startedAt: integer('started_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-  completedAt: integer('completed_at', { mode: 'timestamp' }),
+	id: integer('id').primaryKey({ autoIncrement: true }),
+	programId: integer('program_id').references(() => programs.id, { onDelete: 'set null' }),
+	workoutDayId: integer('workout_day_id').references(() => workoutDays.id, {
+		onDelete: 'set null'
+	}),
+	programName: text('program_name').notNull(),
+	dayName: text('day_name').notNull(),
+	status: text('status', { enum: ['in_progress', 'completed'] })
+		.notNull()
+		.default('in_progress'),
+	startedAt: integer('started_at', { mode: 'timestamp' })
+		.notNull()
+		.$defaultFn(() => new Date()),
+	completedAt: integer('completed_at', { mode: 'timestamp' })
 });
 
 export const exerciseLogs = sqliteTable('exercise_logs', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  exerciseId: integer('exercise_id').references(() => exercises.id, { onDelete: 'set null' }),
-  sessionId: integer('session_id').notNull().references(() => workoutSessions.id, { onDelete: 'cascade' }),
-  exerciseName: text('exercise_name').notNull(),
-  status: text('status', { enum: ['logged', 'skipped'] }).notNull().default('logged'),
-  isAdhoc: integer('is_adhoc', { mode: 'boolean' }).notNull().default(false),
-  sortOrder: integer('sort_order').notNull(),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+	id: integer('id').primaryKey({ autoIncrement: true }),
+	exerciseId: integer('exercise_id').references(() => exercises.id, { onDelete: 'set null' }),
+	sessionId: integer('session_id')
+		.notNull()
+		.references(() => workoutSessions.id, { onDelete: 'cascade' }),
+	exerciseName: text('exercise_name').notNull(),
+	status: text('status', { enum: ['logged', 'skipped'] })
+		.notNull()
+		.default('logged'),
+	isAdhoc: integer('is_adhoc', { mode: 'boolean' }).notNull().default(false),
+	sortOrder: integer('sort_order').notNull(),
+	createdAt: integer('created_at', { mode: 'timestamp' })
+		.notNull()
+		.$defaultFn(() => new Date())
 });
 
 export const setLogs = sqliteTable('set_logs', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  exerciseLogId: integer('exercise_log_id').notNull().references(() => exerciseLogs.id, { onDelete: 'cascade' }),
-  setNumber: integer('set_number').notNull(),
-  weight: real('weight'),
-  reps: integer('reps'),
-  unit: text('unit', { enum: ['kg', 'lbs'] }).notNull().default('kg'),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+	id: integer('id').primaryKey({ autoIncrement: true }),
+	exerciseLogId: integer('exercise_log_id')
+		.notNull()
+		.references(() => exerciseLogs.id, { onDelete: 'cascade' }),
+	setNumber: integer('set_number').notNull(),
+	weight: real('weight'),
+	reps: integer('reps'),
+	unit: text('unit', { enum: ['kg', 'lbs'] })
+		.notNull()
+		.default('kg'),
+	createdAt: integer('created_at', { mode: 'timestamp' })
+		.notNull()
+		.$defaultFn(() => new Date())
 });
 ```
 
@@ -241,20 +277,20 @@ src/routes/
 
 ### Route Responsibilities
 
-| Route | Purpose |
-|-------|---------|
-| `/` | Home screen with active program days, resume workout banner |
-| `/workout/[sessionId]` | Active workout logging interface |
-| `/workout/start` | API to create new workout session |
-| `/history` | View past workouts by date |
-| `/history/by-exercise` | View history grouped by exercise |
-| `/history/[sessionId]` | View single workout session details |
-| `/programs` | List and manage programs |
-| `/programs/new` | Create new program |
-| `/programs/[programId]` | Edit existing program |
-| `/exercises` | View and manage exercise library |
-| `/settings` | App settings, export functionality |
-| `/api/sync` | Endpoint for offline queue synchronization |
+| Route                   | Purpose                                                     |
+| ----------------------- | ----------------------------------------------------------- |
+| `/`                     | Home screen with active program days, resume workout banner |
+| `/workout/[sessionId]`  | Active workout logging interface                            |
+| `/workout/start`        | API to create new workout session                           |
+| `/history`              | View past workouts by date                                  |
+| `/history/by-exercise`  | View history grouped by exercise                            |
+| `/history/[sessionId]`  | View single workout session details                         |
+| `/programs`             | List and manage programs                                    |
+| `/programs/new`         | Create new program                                          |
+| `/programs/[programId]` | Edit existing program                                       |
+| `/exercises`            | View and manage exercise library                            |
+| `/settings`             | App settings, export functionality                          |
+| `/api/sync`             | Endpoint for offline queue synchronization                  |
 
 ---
 
@@ -457,26 +493,26 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { SvelteKitPWA } from '@vite-pwa/sveltekit';
 
 export default {
-  plugins: [
-    sveltekit(),
-    SvelteKitPWA({
-      strategies: 'generateSW',
-      registerType: 'autoUpdate',
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        runtimeCaching: [
-          {
-            urlPattern: /^https?:\/\/.*\/api\/.*/,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-cache',
-              networkTimeoutSeconds: 3,
-            },
-          },
-        ],
-      },
-    }),
-  ],
+	plugins: [
+		sveltekit(),
+		SvelteKitPWA({
+			strategies: 'generateSW',
+			registerType: 'autoUpdate',
+			workbox: {
+				globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+				runtimeCaching: [
+					{
+						urlPattern: /^https?:\/\/.*\/api\/.*/,
+						handler: 'NetworkFirst',
+						options: {
+							cacheName: 'api-cache',
+							networkTimeoutSeconds: 3
+						}
+					}
+				]
+			}
+		})
+	]
 };
 ```
 
@@ -506,18 +542,18 @@ export default {
 // src/lib/offline/queue.ts
 
 interface QueuedAction {
-  id: string;           // UUID
-  timestamp: number;    // When queued
-  action: 'UPDATE_SET' | 'SKIP_EXERCISE' | 'COMPLETE_WORKOUT';
-  payload: {
-    setLogId?: number;
-    weight?: number;
-    reps?: number;
-    unit?: 'kg' | 'lbs';
-    exerciseLogId?: number;
-    sessionId?: number;
-  };
-  retryCount: number;
+	id: string; // UUID
+	timestamp: number; // When queued
+	action: 'UPDATE_SET' | 'SKIP_EXERCISE' | 'COMPLETE_WORKOUT';
+	payload: {
+		setLogId?: number;
+		weight?: number;
+		reps?: number;
+		unit?: 'kg' | 'lbs';
+		exerciseLogId?: number;
+		sessionId?: number;
+	};
+	retryCount: number;
 }
 ```
 
@@ -527,20 +563,20 @@ interface QueuedAction {
 // Pseudo-code for sync
 
 async function syncQueue() {
-  const queue = await getQueuedActions();
+	const queue = await getQueuedActions();
 
-  for (const action of queue) {
-    try {
-      await fetch('/api/sync', {
-        method: 'POST',
-        body: JSON.stringify(action),
-      });
-      await removeFromQueue(action.id);
-    } catch (error) {
-      // Will retry on next sync
-      await incrementRetryCount(action.id);
-    }
-  }
+	for (const action of queue) {
+		try {
+			await fetch('/api/sync', {
+				method: 'POST',
+				body: JSON.stringify(action)
+			});
+			await removeFromQueue(action.id);
+		} catch (error) {
+			// Will retry on next sync
+			await incrementRetryCount(action.id);
+		}
+	}
 }
 
 // Trigger sync when online
@@ -555,17 +591,17 @@ setInterval(syncQueue, 30000); // Every 30 seconds
 ```svelte
 <!-- OfflineIndicator.svelte -->
 <script>
-  import { onlineStatus, pendingSyncCount } from '$lib/offline/stores';
+	import { onlineStatus, pendingSyncCount } from '$lib/offline/stores';
 </script>
 
 {#if !$onlineStatus || $pendingSyncCount > 0}
-  <div class="fixed bottom-4 right-4 bg-gray-800 text-white px-3 py-1 rounded-full text-sm">
-    {#if !$onlineStatus}
-      Offline
-    {:else if $pendingSyncCount > 0}
-      Syncing {$pendingSyncCount}...
-    {/if}
-  </div>
+	<div class="fixed right-4 bottom-4 rounded-full bg-gray-800 px-3 py-1 text-sm text-white">
+		{#if !$onlineStatus}
+			Offline
+		{:else if $pendingSyncCount > 0}
+			Syncing {$pendingSyncCount}...
+		{/if}
+	</div>
 {/if}
 ```
 
@@ -579,44 +615,44 @@ setInterval(syncQueue, 30000); // Every 30 seconds
 // /api/settings/export/json
 
 interface ExportJSON {
-  exportedAt: string;  // ISO timestamp
-  version: '1.0';
+	exportedAt: string; // ISO timestamp
+	version: '1.0';
 
-  programs: Array<{
-    id: number;
-    name: string;
-    isActive: boolean;
-    days: Array<{
-      id: number;
-      name: string;
-      sortOrder: number;
-      exercises: Array<{
-        id: number;
-        name: string;
-        setsCount: number;
-        sortOrder: number;
-        // Progressive overload data baked in
-        lastPerformed: {
-          date: string;
-          weight: number;
-          reps: number;
-          unit: 'kg' | 'lbs';
-        } | null;
-        maxWeight: {
-          date: string;
-          weight: number;
-          reps: number;
-          unit: 'kg' | 'lbs';
-        } | null;
-      }>;
-    }>;
-  }>;
+	programs: Array<{
+		id: number;
+		name: string;
+		isActive: boolean;
+		days: Array<{
+			id: number;
+			name: string;
+			sortOrder: number;
+			exercises: Array<{
+				id: number;
+				name: string;
+				setsCount: number;
+				sortOrder: number;
+				// Progressive overload data baked in
+				lastPerformed: {
+					date: string;
+					weight: number;
+					reps: number;
+					unit: 'kg' | 'lbs';
+				} | null;
+				maxWeight: {
+					date: string;
+					weight: number;
+					reps: number;
+					unit: 'kg' | 'lbs';
+				} | null;
+			}>;
+		}>;
+	}>;
 
-  exercises: Array<{
-    id: number;
-    name: string;
-    unitPreference: 'kg' | 'lbs';
-  }>;
+	exercises: Array<{
+		id: number;
+		name: string;
+		unitPreference: 'kg' | 'lbs';
+	}>;
 }
 ```
 
@@ -644,20 +680,15 @@ session_date,session_id,program_name,day_name,exercise_name,exercise_status,set_
 const STALE_WORKOUT_HOURS = 4;
 
 async function closeStaleWorkouts(db: Database) {
-  const cutoff = new Date(Date.now() - STALE_WORKOUT_HOURS * 60 * 60 * 1000);
+	const cutoff = new Date(Date.now() - STALE_WORKOUT_HOURS * 60 * 60 * 1000);
 
-  await db
-    .update(workoutSessions)
-    .set({
-      status: 'completed',
-      completedAt: new Date(),
-    })
-    .where(
-      and(
-        eq(workoutSessions.status, 'in_progress'),
-        lt(workoutSessions.startedAt, cutoff)
-      )
-    );
+	await db
+		.update(workoutSessions)
+		.set({
+			status: 'completed',
+			completedAt: new Date()
+		})
+		.where(and(eq(workoutSessions.status, 'in_progress'), lt(workoutSessions.startedAt, cutoff)));
 }
 ```
 
@@ -667,9 +698,9 @@ This runs on every page load to clean up stale workouts.
 
 ## Environment Variables
 
-| Variable | Required | Description | Example |
-|----------|----------|-------------|---------|
-| `DATABASE_PATH` | Yes | Absolute path to SQLite database file | `/data/workout-tracker.db` |
+| Variable        | Required | Description                           | Example                    |
+| --------------- | -------- | ------------------------------------- | -------------------------- |
+| `DATABASE_PATH` | Yes      | Absolute path to SQLite database file | `/data/workout-tracker.db` |
 
 ### Development `.env`
 
@@ -685,7 +716,7 @@ services:
   workout-tracker:
     build: .
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
       - DATABASE_PATH=/data/workout-tracker.db
     volumes:
@@ -705,15 +736,16 @@ All business logic and data access code is developed using strict Test-Driven De
 
 ### Testing Stack
 
-| Tool | Purpose |
-|------|---------|
-| Vitest | Unit tests for server-side logic, queries, utilities |
+| Tool                    | Purpose                                                         |
+| ----------------------- | --------------------------------------------------------------- |
+| Vitest                  | Unit tests for server-side logic, queries, utilities            |
 | @testing-library/svelte | Component tests only where components contain non-trivial logic |
-| Playwright | End-to-end tests for complete user flows |
+| Playwright              | End-to-end tests for complete user flows                        |
 
 ### What Gets Unit Tested (TDD - Write Test First)
 
 **Database queries** (`src/lib/server/db/queries/`):
+
 - Program CRUD operations (create, read, update, delete, duplicate, activate/deactivate)
 - Exercise CRUD operations (create, rename, delete, auto-creation)
 - Workout session operations (start, complete, fetch in-progress)
@@ -724,6 +756,7 @@ All business logic and data access code is developed using strict Test-Driven De
 - Export data assembly (JSON structure, CSV generation)
 
 **Business logic and utilities** (`src/lib/utils/`, `src/lib/server/utils/`):
+
 - Stale workout cutoff calculation
 - Unit conversion (kg ↔ lbs) if applicable
 - Date formatting helpers
@@ -732,6 +765,7 @@ All business logic and data access code is developed using strict Test-Driven De
 - Workout summary computation (completed vs planned, completion percentage)
 
 **Offline sync logic** (`src/lib/offline/`):
+
 - Queue operations (add to queue, remove from queue, get pending)
 - Sync retry logic (retry count, error handling)
 - Conflict resolution if any
@@ -839,21 +873,21 @@ import * as schema from '../schema';
 import { createProgram, getActiveProgram } from './programs';
 
 describe('programs queries', () => {
-  let db: ReturnType<typeof drizzle>;
+	let db: ReturnType<typeof drizzle>;
 
-  beforeEach(() => {
-    const sqlite = new Database(':memory:');
-    db = drizzle(sqlite, { schema });
-    migrate(db, { migrationsFolder: './drizzle/migrations' });
-  });
+	beforeEach(() => {
+		const sqlite = new Database(':memory:');
+		db = drizzle(sqlite, { schema });
+		migrate(db, { migrationsFolder: './drizzle/migrations' });
+	});
 
-  it('should create a program', async () => {
-    // test implementation
-  });
+	it('should create a program', async () => {
+		// test implementation
+	});
 
-  it('should only allow one active program', async () => {
-    // test implementation
-  });
+	it('should only allow one active program', async () => {
+		// test implementation
+	});
 });
 ```
 
@@ -873,6 +907,7 @@ When a task involves a user flow, the developer must:
 ### CI Considerations
 
 Tests should be runnable via:
+
 ```bash
 # Unit tests
 npm run test:unit
@@ -888,16 +923,16 @@ npm run test
 
 ## Key Technical Decisions Summary
 
-| Decision | Rationale |
-|----------|-----------|
-| Drizzle ORM | Type-safe, lightweight, good SQLite support, migrations |
-| Form actions | Progressive enhancement, simpler state management, works with PWA |
-| Snapshot fields in logs | Preserves historical accuracy when entities are renamed/deleted |
-| IndexedDB for offline queue | Browser-native, reliable, works with service workers |
-| Per-set immediate save | Maximum data safety, survives crashes/closes |
-| Single active program | Simplifies home screen and workout start flow |
-| Up/down arrows for reorder | More reliable than drag-drop on mobile touch screens |
-| Type-ahead for exercises | Fast input, auto-creates new exercises, familiar pattern |
+| Decision                    | Rationale                                                         |
+| --------------------------- | ----------------------------------------------------------------- |
+| Drizzle ORM                 | Type-safe, lightweight, good SQLite support, migrations           |
+| Form actions                | Progressive enhancement, simpler state management, works with PWA |
+| Snapshot fields in logs     | Preserves historical accuracy when entities are renamed/deleted   |
+| IndexedDB for offline queue | Browser-native, reliable, works with service workers              |
+| Per-set immediate save      | Maximum data safety, survives crashes/closes                      |
+| Single active program       | Simplifies home screen and workout start flow                     |
+| Up/down arrows for reorder  | More reliable than drag-drop on mobile touch screens              |
+| Type-ahead for exercises    | Fast input, auto-creates new exercises, familiar pattern          |
 
 ---
 

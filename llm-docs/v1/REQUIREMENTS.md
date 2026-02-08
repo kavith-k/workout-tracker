@@ -22,25 +22,32 @@ A self-hosted workout tracking application for personal use. The app allows user
 ## Core Concepts
 
 ### Workout Program
+
 A structured training plan consisting of multiple workout days. Only one program can be "active" at a time, but multiple programs can exist (inactive ones can be reactivated later).
 
 **Example**: An Upper-Lower split program with 4 days:
+
 - Upper-1
 - Lower-1
 - Upper-2
 - Lower-2
 
 ### Workout Day
+
 A named day within a program containing a list of exercises with prescribed sets.
 
 ### Exercise
+
 A movement tracked in the system. Exercises exist in a global library that auto-populates as users create programs. If an exercise doesn't exist when added to a program, it gets created automatically.
 
 ### Workout Session (Log)
+
 A recorded instance of performing a workout day. Contains logged sets for each exercise performed.
 
 ### Set
+
 A single work set for an exercise, tracking:
+
 - **Weight**: The load used (in kg or lbs)
 - **Reps**: Number of repetitions completed
 
@@ -73,10 +80,12 @@ A single work set for an exercise, tracking:
 **US-020**: As a user, I want to see all prescribed sets for the current exercise displayed at once in a form-style layout so I can fill them in as I complete them.
 
 **US-021**: As a user, for each set I want to enter:
+
 - Weight (numeric input)
 - Reps (numeric input)
 
 **US-022**: As a user, I want to see progressive overload hints for each exercise showing:
+
 - **Previous**: The weight and reps from the last time I performed this exercise (in any program), with the date
 - **Max**: The heaviest weight I've ever lifted for this exercise, with the date
 
@@ -109,6 +118,7 @@ A single work set for an exercise, tracking:
 ### Workout Summary
 
 **US-040**: As a user, after ending a workout, I want to see a summary screen showing:
+
 - Exercises completed vs. planned (e.g., "5/6 exercises completed")
 - Any personal records (PRs) hit during this session (new max weight on any exercise)
 
@@ -133,6 +143,7 @@ A single work set for an exercise, tracking:
 ### Programs
 
 **US-060**: As a user, I want to create a new workout program by:
+
 - Giving it a name
 - Adding workout days (each with a name)
 - Adding exercises to each day with a specified number of sets
@@ -164,12 +175,14 @@ A single work set for an exercise, tracking:
 **US-080**: As a user, I want to view a list of all exercises I've ever performed or added to programs.
 
 **US-081**: As a user, I want to see quick stats for each exercise in the library:
+
 - Max weight ever lifted (with reps at that weight)
 - Last performed date
 
 **US-082**: As a user, I want to edit an exercise name. Renaming should update the exercise everywhere it appears.
 
 **US-083**: As a user, I want to delete an exercise from the library. If the exercise has history:
+
 - Show a warning
 - Keep historical logs intact (orphaned)
 - Remove the exercise from the library
@@ -199,6 +212,7 @@ A single work set for an exercise, tracking:
 ## Screen Inventory
 
 ### 1. Home Screen
+
 - Display current active program name
 - Large tappable buttons for each workout day
 - "Last workout" context line
@@ -206,6 +220,7 @@ A single work set for an exercise, tracking:
 - Empty state if no active program
 
 ### 2. Workout Logging Screen
+
 - Current exercise name with dropdown to switch
 - Progressive overload hints (previous + max)
 - Form with all sets displayed (weight + reps inputs for each)
@@ -214,29 +229,34 @@ A single work set for an exercise, tracking:
 - Stop workout button
 
 ### 3. Workout Summary Screen
+
 - Exercises completed vs. planned
 - PRs achieved (if any)
 - Congratulatory message (if all exercises completed)
 - Return to home button
 
 ### 4. History Screen (By Date - Default)
+
 - List of workout sessions by date
 - Each session shows: date, program name, day name, exercises performed
 - Expandable to see set details
 - Delete option per session
 
 ### 5. History Screen (By Exercise)
+
 - List of all exercises
 - Tap exercise to see all historical entries
 - Each entry shows: date, sets/reps/weight
 - Delete option per entry
 
 ### 6. Programs List Screen
+
 - List of all programs
 - Active program indicator
 - Options per program: Edit, Duplicate, Delete, Set Active
 
 ### 7. Program Editor Screen
+
 - Program name input
 - List of workout days
 - Add/remove/rename days
@@ -244,12 +264,14 @@ A single work set for an exercise, tracking:
 - Add/remove exercises, adjust set counts
 
 ### 8. Exercises Library Screen
+
 - List of all exercises
 - Quick stats (max weight, last performed)
 - Edit name option
 - Delete option (with warning if has history)
 
 ### 9. Settings Screen
+
 - Export as JSON button
 - Export as CSV button
 - (Future: other settings as needed)

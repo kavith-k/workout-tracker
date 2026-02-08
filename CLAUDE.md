@@ -31,6 +31,7 @@ npm run db:studio        # Open Drizzle Studio
 ## Environment
 
 Requires `DATABASE_PATH` env var. Copy `.env.example` to `.env` for local dev:
+
 ```
 DATABASE_PATH=./data/workout-tracker.db
 ```
@@ -38,6 +39,7 @@ DATABASE_PATH=./data/workout-tracker.db
 ## Vitest Configuration
 
 Two test projects configured in `vite.config.ts`:
+
 - **`client`**: Browser-based component tests matching `src/**/*.svelte.{test,spec}.{js,ts}`, runs in headless Firefox via Playwright provider. Excludes `src/lib/server/**`.
 - **`server`**: Node environment tests matching `src/**/*.{test,spec}.{js,ts}`, excludes `.svelte.` test files.
 
@@ -79,12 +81,14 @@ Any documentation written by agents must be clear, simple, and short. No unneces
 ## Context7 MCP Tools
 
 1. **resolve-library-id** — Resolves a general library name into a Context7-compatible library ID.
-  - `query` (required): The user's question or task (used to rank results by relevance)
-  - `libraryName` (required): The name of the library to search for
+
+- `query` (required): The user's question or task (used to rank results by relevance)
+- `libraryName` (required): The name of the library to search for
 
 2. **query-docs** — Retrieves documentation for a library using a Context7-compatible library ID.
-  - `libraryId` (required): Exact Context7-compatible library ID (e.g., shadcn-svelte.com/docs, tailwindcss.com/docs)
-  - `query` (required): The question or task to get relevant documentation for
+
+- `libraryId` (required): Exact Context7-compatible library ID (e.g., shadcn-svelte.com/docs, tailwindcss.com/docs)
+- `query` (required): The question or task to get relevant documentation for
 
 ## Branching & PR Workflow
 
@@ -116,6 +120,7 @@ gh pr checks <pr-number>
 ## Phase Verification
 
 At the end of each phase, a verifier subagent MUST be kicked off to check:
+
 1. Everything is built as per the plan — no outstanding items
 2. No regressions or bugs introduced
 3. All rules in this file were followed — no shortcuts taken
