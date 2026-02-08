@@ -30,11 +30,8 @@ if [ -n "$ERRORS" ]; then
 	# Use node (guaranteed available in this SvelteKit project) to produce safe JSON
 	node -e "
 		const output = {
-			hookSpecificOutput: {
-				hookEventName: 'Stop',
-				decision: 'block',
-				reason: process.argv[1]
-			}
+			decision: 'block',
+			reason: process.argv[1]
 		};
 		console.log(JSON.stringify(output));
 	" "$REASON"
