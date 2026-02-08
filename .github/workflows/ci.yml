@@ -22,6 +22,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Install Playwright browsers
+        run: npx playwright install firefox --with-deps
+
       - name: Lint
         run: npm run lint
 
@@ -35,9 +38,6 @@ jobs:
         run: npm run build
         env:
           DATABASE_PATH: ./data/build.db
-
-      - name: Install Playwright browsers
-        run: npx playwright install firefox --with-deps
 
       - name: E2E tests
         run: |
