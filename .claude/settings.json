@@ -1,0 +1,46 @@
+{
+	"hooks": {
+		"Stop": [
+			{
+				"hooks": [
+					{
+						"type": "command",
+						"command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/quality-gate.sh",
+						"timeout": 300
+					}
+				]
+			},
+			{
+				"hooks": [
+					{
+						"type": "agent",
+						"prompt": "You are a verification agent for the Workout Tracker project. Inspect the recent changes and verify:\n1. All planned work items were completed — nothing left unfinished\n2. No regressions or bugs introduced (check for obvious issues in changed files)\n3. Code follows project rules from CLAUDE.md: DRY/YAGNI, clear, self-documenting\n4. No shortcuts taken (skipped error handling, hardcoded values, TODO/FIXME left behind)\n\nRead CLAUDE.md first, then inspect recently modified files using Glob and Read.\n\nContext: $ARGUMENTS\n\nReturn {\"ok\": true} if everything looks good.\nReturn {\"ok\": false, \"reason\": \"<specific issues found>\"} if there are problems.",
+						"timeout": 300
+					}
+				]
+			},
+			{
+				"hooks": [
+					{
+						"type": "prompt",
+						"prompt": "You are a documentation reviewer for the Workout Tracker project. Evaluate whether the work just completed requires documentation updates.\n\nContext: $ARGUMENTS\n\nRules:\n- The bar for ADDING new docs is HIGH. Most changes don't need new docs.\n- OUTDATED or INCORRECT docs are bad. If existing docs are now wrong due to the changes, flag it.\n- MISSING docs for major new features or architecture changes should be flagged.\n- Simple bug fixes, minor refactors, and small changes almost never need doc updates.\n- Relevant docs: CLAUDE.md, AGENTS.md, llm-docs/v1/*.md\n\nReturn {\"ok\": true} if no doc changes needed.\nReturn {\"ok\": false, \"reason\": \"<what docs need updating and why>\"} if docs need attention.",
+						"model": "claude-haiku-4-5-20251001",
+						"timeout": 300
+					}
+				]
+			}
+		],
+		"TaskCompleted": [
+			{
+				"hooks": [
+					{
+						"type": "prompt",
+						"prompt": "A task was just marked as completed. Review the context and determine if tests and linting should be run to verify quality.\n\nContext: $ARGUMENTS\n\nDecision criteria:\n- If code files (.ts, .js, .svelte) were modified or created → tests and lint SHOULD be run\n- If only docs, config, or non-code files changed → tests are NOT needed\n- If the task was research/exploration with no code changes → tests are NOT needed\n\nReturn {\"ok\": true} if no testing needed.\nReturn {\"ok\": false, \"reason\": \"Code was modified in this task. Please run `npm run lint` and `npm run test:unit -- --run` to verify quality before moving on.\"} if tests should be run.",
+						"model": "claude-haiku-4-5-20251001",
+						"timeout": 300
+					}
+				]
+			}
+		]
+	}
+}
