@@ -243,18 +243,14 @@ src/routes/
 │       └── +page.server.ts     # Load session detail
 │
 ├── programs/
-│   ├── +page.svelte            # Programs list
-│   ├── +page.server.ts         # Load all programs
+│   ├── +page.svelte            # Programs list (actions: setActive, delete, duplicate)
+│   ├── +page.server.ts         # Load all programs, form actions
 │   ├── new/
 │   │   ├── +page.svelte        # Create program form
-│   │   └── +page.server.ts     # Form actions for create
-│   ├── [programId]/
-│   │   ├── +page.svelte        # Edit program form
-│   │   ├── +page.server.ts     # Load program, form actions for update
-│   │   └── delete/
-│   │       └── +page.server.ts # Form action for delete
-│   └── duplicate/
-│       └── +page.server.ts     # Form action for duplicate
+│   │   └── +page.server.ts     # Form action for create
+│   └── [programId]/
+│       ├── +page.svelte        # Edit program form
+│       └── +page.server.ts     # Load program, form action for update
 │
 ├── exercises/
 │   ├── +page.svelte            # Exercise library list
@@ -324,12 +320,12 @@ src/lib/components/
 
 ```
 ├── program/
-│   ├── ProgramCard.svelte      # Program list item with actions
-│   ├── DayEditor.svelte        # Edit a single workout day
-│   ├── DayReorderButtons.svelte # Up/down arrows for day ordering
-│   ├── ExerciseInput.svelte    # Type-ahead exercise input
-│   └── SetsCountInput.svelte   # Input to adjust sets count
+│   └── ProgramForm.svelte      # Shared create/edit form with dynamic days,
+│                                # exercises, reordering, validation, and
+│                                # datalist autocomplete for exercise names
 ```
+
+Note: The program list page (`/programs/+page.svelte`) handles program cards, dropdown actions, delete confirmation (AlertDialog), and duplicate dialog inline rather than as separate components.
 
 ### History Components
 
@@ -354,14 +350,19 @@ src/lib/components/
 
 ```
 ├── ui/                         # shadcn-svelte components
+│   ├── alert-dialog/
+│   ├── badge/
 │   ├── button/
-│   ├── input/
-│   ├── label/
+│   ├── card/
+│   ├── command/
 │   ├── dialog/
 │   ├── dropdown-menu/
+│   ├── input/
+│   ├── label/
+│   ├── popover/
+│   ├── separator/
 │   ├── sheet/
-│   ├── toast/
-│   └── card/
+│   └── toast/
 │
 ├── shared/
 │   ├── OfflineIndicator.svelte # Shows offline status + pending sync count
@@ -847,15 +848,15 @@ src/
 │       ├── sync.ts
 │       └── sync.test.ts                    # Unit tests
 │
-tests/
-├── e2e/
-│   ├── program-management.spec.ts
-│   ├── workout-logging.spec.ts
-│   ├── progressive-overload.spec.ts
-│   ├── history.spec.ts
-│   ├── exercise-library.spec.ts
-│   ├── export.spec.ts
-│   └── resume-workout.spec.ts
+e2e/
+├── global-setup.ts                 # Creates fresh test DB with migrations
+├── program-management.test.ts      # 8 serial tests for programs CRUD
+├── workout-logging.spec.ts         # (planned)
+├── progressive-overload.spec.ts    # (planned)
+├── history.spec.ts                 # (planned)
+├── exercise-library.spec.ts        # (planned)
+├── export.spec.ts                  # (planned)
+└── resume-workout.spec.ts          # (planned)
 ```
 
 ### Unit Test Database Strategy
@@ -991,6 +992,8 @@ workout-tracker/
 │   └── workflows/
 │       ├── ci.yml                  # CI pipeline (lint, check, test, build)
 │       └── cd.yml                  # CD pipeline (Docker build, push to GHCR)
+├── e2e/                            # Playwright E2E tests
+│   └── global-setup.ts            # Test DB migration setup
 ├── data/                           # Local dev database (gitignored)
 ├── .env                            # Local dev env vars (gitignored)
 ├── .env.example                    # Template for env vars
@@ -999,13 +1002,10 @@ workout-tracker/
 ├── svelte.config.js
 ├── tailwind.config.js
 ├── vite.config.ts
-├── vitest.config.ts                # Vitest configuration
-├── playwright.config.ts            # Playwright configuration
+├── playwright.config.ts            # Playwright config (globalSetup, webServer, test DB env)
 ├── package.json
 ├── Dockerfile                      # Multi-stage Docker build
 ├── docker-compose.yml              # Docker Compose with volume persistence
-├── REQUIREMENTS.md
-├── TECHNICAL_DESIGN.md
 └── README.md
 ```
 
@@ -1016,9 +1016,9 @@ workout-tracker/
 1. ~~**Project scaffolding**~~ - SvelteKit, Tailwind, shadcn-svelte, Vitest, Playwright setup
 2. ~~**Database setup**~~ - Drizzle, schema, migrations, in-memory test DB helper
 3. ~~**Docker, CI/CD**~~ - Dockerfile, Docker Compose, GitHub Actions CI/CD pipelines
-4. **Core layout** - App shell, hamburger menu, navigation _(next)_
-5. **Programs CRUD** - Create, edit, list, delete, duplicate, activate programs
-6. **Exercise library** - Auto-population, list, edit, delete
+4. ~~**Core layout**~~ - App shell, hamburger menu, navigation
+5. ~~**Programs CRUD**~~ - Create, edit, list, delete, duplicate, activate programs
+6. **Exercise library** - Auto-population, list, edit, delete _(next)_
 7. **Workout flow** - Start, log sets, stop, summary
 8. **Progressive overload** - Previous/max queries and display
 9. **History views** - By date, by exercise, delete logs
