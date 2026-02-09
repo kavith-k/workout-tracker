@@ -96,11 +96,11 @@ Build the app shell that every page lives inside: hamburger menu, navigation, an
 
 ---
 
-## Phase 5: Programs CRUD 
+## Phase 5: Programs CRUD
 
 Build the full program management experience. This is done before the workout flow because you need programs to exist before you can start workouts.
 
-### 5a: Query Layer 
+### 5a: Query Layer
 
 16 query functions in `src/lib/server/db/queries/programs.ts` with 37 unit tests in `programs.test.ts`:
 
