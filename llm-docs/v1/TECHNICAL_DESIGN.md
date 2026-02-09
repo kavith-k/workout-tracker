@@ -1069,8 +1069,8 @@ workout-tracker/
 5. ~~**Programs CRUD**~~ - Create, edit, list, delete, duplicate, activate programs
 6. ~~**Exercise library**~~ - Auto-population, list, edit, delete
 7. ~~**Workout flow**~~ - Start, log sets, stop, summary
-8. **Progressive overload** - Previous/max queries and display _(next)_
-9. **History views** - By date, by exercise, delete logs
-10. **PWA/Offline** - Service worker, IndexedDB queue, sync
+8. ~~**Progressive overload**~~ - Previous/max queries and display
+9. ~~**History views**~~ - By date, by exercise, session detail, delete logs/sessions
+10. **PWA/Offline** - Service worker, IndexedDB queue, sync _(next)_
 11. **Export** - JSON and CSV download
 12. **Polish** - Empty states, loading states, error handling
