@@ -1017,7 +1017,7 @@ workout-tracker/
 2. ~~**Database setup**~~ - Drizzle, schema, migrations, in-memory test DB helper
 3. ~~**Docker, CI/CD**~~ - Dockerfile, Docker Compose, GitHub Actions CI/CD pipelines
 4. ~~**Core layout**~~ - App shell, hamburger menu, navigation
-5. ~~**Programs CRUD**~~ - 16 query functions (37 unit tests), ProgramForm shared component, list/create/edit pages, E2E test suite (8 tests)
+5. ~~**Programs CRUD**~~ - Create, edit, list, delete, duplicate, activate programs
 6. **Exercise library** - Auto-population, list, edit, delete _(next)_
 7. **Workout flow** - Start, log sets, stop, summary
 8. **Progressive overload** - Previous/max queries and display
