@@ -172,8 +172,9 @@
 									method="POST"
 									action="?/updateSet"
 									use:enhance={() => {
-										return async ({ update }) => {
-											await update({ reset: false });
+										return async () => {
+											// Skip update() to avoid re-rendering inputs during
+											// active editing — data is saved server-side
 										};
 									}}
 									class="contents"

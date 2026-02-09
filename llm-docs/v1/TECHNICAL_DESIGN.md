@@ -227,10 +227,12 @@ src/routes/
 ├── workout/
 │   ├── [sessionId]/
 │   │   ├── +page.svelte        # Workout logging screen
-│   │   ├── +page.server.ts     # Load session, exercises, sets
-│   │   └── +server.ts          # API for set updates (for offline sync)
+│   │   ├── +page.server.ts     # Load session, form actions (updateSet, skip, etc.)
+│   │   └── summary/
+│   │       ├── +page.svelte    # Post-workout summary screen
+│   │       └── +page.server.ts # Load workout summary
 │   └── start/
-│       └── +server.ts          # POST to start a workout session
+│       └── +page.server.ts     # Form action to create session + redirect
 │
 ├── history/
 │   ├── +page.svelte            # History list (by date, default)
@@ -277,7 +279,8 @@ src/routes/
 | ----------------------- | ----------------------------------------------------------- |
 | `/`                     | Home screen with active program days, resume workout banner |
 | `/workout/[sessionId]`  | Active workout logging interface                            |
-| `/workout/start`        | API to create new workout session                           |
+| `/workout/[sessionId]/summary` | Post-workout summary with PRs and stats              |
+| `/workout/start`        | Form action to create session and redirect                  |
 | `/history`              | View past workouts by date                                  |
 | `/history/by-exercise`  | View history grouped by exercise                            |
 | `/history/[sessionId]`  | View single workout session details                         |
@@ -305,16 +308,7 @@ src/lib/components/
 
 ### Workout Components
 
-```
-├── workout/
-│   ├── ExerciseSelector.svelte # Dropdown to switch exercises
-│   ├── ExerciseCard.svelte     # Card showing exercise with all sets
-│   ├── SetRow.svelte           # Single set input row (weight, reps)
-│   ├── ProgressiveHints.svelte # Previous/max data display
-│   ├── AddAdhocExercise.svelte # Dialog to add ad-hoc exercise
-│   ├── StopWorkoutDialog.svelte # Confirmation dialog
-│   └── WorkoutSummary.svelte   # Post-workout summary screen
-```
+Note: Workout UI is implemented inline in the route page components (`/workout/[sessionId]/+page.svelte` and `summary/+page.svelte`) rather than as separate reusable components. This keeps the forms and their `use:enhance` callbacks co-located with the markup they control.
 
 ### Program Components
 
@@ -479,6 +473,61 @@ WHERE el.exercise_id = ?
 ORDER BY sl.weight DESC
 LIMIT 1;
 ```
+
+---
+
+## Workout Architecture
+
+### Query Module
+
+`src/lib/server/db/queries/workouts.ts` contains 15 functions covering the full workout lifecycle. Key exports:
+
+- **Lifecycle**: `startWorkout`, `getWorkoutSession`, `completeWorkout`, `getWorkoutSummary`
+- **Set logging**: `updateSetLog`, `addSetToExerciseLog`, `removeSetFromExerciseLog`
+- **Exercise management**: `skipExercise`, `unskipExercise`, `addAdhocExercise`
+- **Progressive overload**: `getPreviousPerformance`, `getMaxPerformance`
+- **Session management**: `getInProgressWorkout`, `closeStaleWorkouts`, `updateExerciseUnitPreference`
+
+### Stale Workout Cleanup
+
+The root layout server load (`src/routes/+layout.server.ts`) calls `closeStaleWorkouts(db)` on every page load. This marks any `in_progress` session older than 4 hours as `completed` and auto-skips unlogged exercises. This prevents abandoned workouts from permanently blocking new ones.
+
+### ResumeWorkoutBanner Data Flow
+
+```
++layout.server.ts (loads inProgressWorkout)
+  → +layout.svelte (passes to AppShell)
+    → AppShell.svelte (passes to ResumeWorkoutBanner)
+      → ResumeWorkoutBanner.svelte (shows banner with Resume link)
+```
+
+The banner is hidden on `/workout/` routes using `$app/state` page URL checks.
+
+### Set Update Form Pattern
+
+Each set row is a `<form action="?/updateSet">` with `use:enhance`. The weight and reps inputs use `onchange` handlers that call `form.requestSubmit()` for immediate server-side persistence. The enhance callback intentionally skips `update()` to avoid re-rendering the page during active editing — this prevents race conditions where a re-render could overwrite values the user is currently typing.
+
+### Progressive Overload Data
+
+The workout page's load function builds a `progressiveOverload` map keyed by `exerciseLogId`:
+
+```typescript
+progressiveOverload: Record<number, {
+  previous: { date: Date; sets: Array<{ weight: number; reps: number; unit: string }> } | null;
+  max: { weight: number; reps: number; unit: string; date: Date } | null;
+}>
+```
+
+- **Previous**: Sets from the most recent completed session for that exercise (ordered by `completedAt DESC, id DESC` as tiebreaker)
+- **Max**: Heaviest single set weight ever recorded across all completed sessions
+
+### Workout Summary and PR Detection
+
+`completeWorkout` marks the session as completed and auto-skips any exercise logs without filled sets. `getWorkoutSummary` then:
+
+1. Counts completed vs total exercises (excluding ad-hoc from the total)
+2. Counts skipped exercises
+3. Detects PRs by comparing each exercise's heaviest set weight against the max weight from all previous completed sessions
 
 ---
 

@@ -59,29 +59,22 @@ test.describe.serial('Workout Flow', () => {
 		// Log sets for Bench Press (first exercise)
 		const exerciseCards = page.locator('[id^="exercise-log-"]');
 		const benchCard = exerciseCards.first();
-		const benchWeights = benchCard.locator('input[name="weight"]');
-		const benchReps = benchCard.locator('input[name="reps"]');
 
-		await benchWeights.first().fill('80');
-		await benchWeights
-			.first()
-			.evaluate((el: HTMLInputElement) => el.dispatchEvent(new Event('change', { bubbles: true })));
-		await benchReps.first().fill('8');
-		await benchReps
+		// Fill both inputs before triggering a single form submission
+		await benchCard.locator('input[name="weight"]').first().fill('80');
+		await benchCard.locator('input[name="reps"]').first().fill('8');
+		await benchCard
+			.locator('input[name="reps"]')
 			.first()
 			.evaluate((el: HTMLInputElement) => el.dispatchEvent(new Event('change', { bubbles: true })));
 
 		// Log sets for Overhead Press (second exercise)
 		const ohpCard = exerciseCards.nth(1);
-		const ohpWeights = ohpCard.locator('input[name="weight"]');
-		const ohpReps = ohpCard.locator('input[name="reps"]');
 
-		await ohpWeights.first().fill('40');
-		await ohpWeights
-			.first()
-			.evaluate((el: HTMLInputElement) => el.dispatchEvent(new Event('change', { bubbles: true })));
-		await ohpReps.first().fill('10');
-		await ohpReps
+		await ohpCard.locator('input[name="weight"]').first().fill('40');
+		await ohpCard.locator('input[name="reps"]').first().fill('10');
+		await ohpCard
+			.locator('input[name="reps"]')
 			.first()
 			.evaluate((el: HTMLInputElement) => el.dispatchEvent(new Event('change', { bubbles: true })));
 
@@ -183,9 +176,6 @@ test.describe.serial('Workout Flow', () => {
 			const repsInput = card.locator('input[name="reps"]').first();
 
 			await weightInput.fill(String(50 + i * 10));
-			await weightInput.evaluate((el: HTMLInputElement) =>
-				el.dispatchEvent(new Event('change', { bubbles: true }))
-			);
 			await repsInput.fill('10');
 			await repsInput.evaluate((el: HTMLInputElement) =>
 				el.dispatchEvent(new Event('change', { bubbles: true }))
