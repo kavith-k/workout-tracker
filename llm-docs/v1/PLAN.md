@@ -96,13 +96,13 @@ Build the app shell that every page lives inside: hamburger menu, navigation, an
 
 ---
 
-## Phase 5: Programs CRUD
+## ~~Phase 5: Programs CRUD~~ ✅
 
 Build the full program management experience. This is done before the workout flow because you need programs to exist before you can start workouts.
 
-### 5a: Query Layer
+### ~~5a: Query Layer~~ ✅
 
-Write the database query functions for programs, with unit tests:
+16 query functions in `src/lib/server/db/queries/programs.ts` with 37 unit tests in `programs.test.ts`:
 
 - `createProgram(name)` - creates a program
 - `getProgram(id)` - returns program with days and exercises
@@ -121,31 +121,19 @@ Write the database query functions for programs, with unit tests:
 - `updateDayExerciseSets(dayExerciseId, setsCount)` - changes set count
 - `reorderDayExercises(dayId, dayExerciseIds[])` - updates sort order
 
-### 5b: UI
+### ~~5b: UI~~ ✅
 
-- **Programs list page** (`/programs`):
-  - List all programs with active indicator
-  - Actions per program: Edit, Duplicate, Delete, Set Active
-  - Empty state if no programs exist
-- **Create program page** (`/programs/new`):
-  - Program name input
-  - Add workout days (name input + add button)
-  - Per day: up/down arrows to reorder, delete button
-  - Per day: add exercises with type-ahead input, set count (default 3), add/remove sets, up/down reorder, delete
-  - Save button
-- **Edit program page** (`/programs/[programId]`):
-  - Same form as create, pre-populated with existing data
-  - Save changes
-- Delete confirmation dialog
-- Duplicate action (prompts for new name)
+- **Programs list page** (`/programs`) — list with dropdown actions (Edit, Duplicate, Set Active, Delete), AlertDialog for delete confirmation, Dialog for duplicate name prompt, empty state
+- **Create program page** (`/programs/new`) — shared `ProgramForm` component with dynamic days/exercises, reordering, client-side validation, datalist autocomplete
+- **Edit program page** (`/programs/[programId]`) — same ProgramForm pre-populated with existing data
+- **Shared component**: `src/lib/components/program/ProgramForm.svelte` — used by both create and edit pages
+- **shadcn-svelte components installed**: dialog, alert-dialog, dropdown-menu, badge, card, input, label, separator, popover, command
 
-### 5c: E2E Tests
+### ~~5c: E2E Tests~~ ✅
 
-- Create a program with days and exercises
-- Edit, duplicate, delete a program
-- Activate/switch programs
+8 serial Playwright tests in `e2e/program-management.test.ts` covering: empty state, create (single day), create (multiple days), activate, switch active, duplicate, edit, delete. E2E infrastructure: `e2e/global-setup.ts` for test database migration.
 
-**Done when**: You can fully manage workout programs through the UI. Programs list shows active indicator. Deleting a program works without affecting future workout history.
+**Done**: Full program management through the UI. Programs list shows active indicator. All 42 unit tests and 9 E2E tests pass.
 
 ---
 
