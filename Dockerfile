@@ -14,6 +14,7 @@ RUN npm install
 
 # Copy source and build
 COPY . .
+ENV DATABASE_PATH=/tmp/build.db
 RUN npm run build
 
 # Stage 2: Production
