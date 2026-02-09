@@ -323,13 +323,7 @@ Note: The program list page (`/programs/+page.svelte`) handles program cards, dr
 
 ### History Components
 
-```
-├── history/
-│   ├── SessionCard.svelte      # Workout session summary card
-│   ├── ExerciseLogCard.svelte  # Exercise within a session
-│   ├── SetLogRow.svelte        # Display of a logged set
-│   └── ViewToggle.svelte       # Toggle between date/exercise view
-```
+Note: History UI is implemented inline in the route page components (`/history/+page.svelte`, `/history/by-exercise/+page.svelte`, `/history/[sessionId]/+page.svelte`) rather than as separate reusable components. The view toggle is a pair of Button links at the top of each history page, and session cards, exercise log cards, and set detail grids are all inline markup with `data-testid` attributes for E2E testing.
 
 ### Exercise Library Components
 
@@ -356,6 +350,7 @@ Note: The program list page (`/programs/+page.svelte`) handles program cards, dr
 │   ├── popover/
 │   ├── separator/
 │   ├── sheet/
+│   ├── tabs/
 │   └── toast/
 │
 ├── shared/
@@ -528,6 +523,54 @@ progressiveOverload: Record<number, {
 1. Counts completed vs total exercises (excluding ad-hoc from the total)
 2. Counts skipped exercises
 3. Detects PRs by comparing each exercise's heaviest set weight against the max weight from all previous completed sessions
+
+---
+
+## History Architecture
+
+### Query Module
+
+`src/lib/server/db/queries/history.ts` contains 6 functions for browsing and managing workout history. Key exports:
+
+- **Browse**: `getSessionsByDate(db, page?, limit?)`, `getSessionDetail(db, sessionId)`, `getHistoryByExercise(db)`, `getExerciseHistory(db, exerciseId, page?, limit?)`
+- **Delete**: `deleteSession(db, sessionId)`, `deleteExerciseLog(db, exerciseLogId)`
+
+Custom types exported: `SessionSummary`, `ExerciseHistoryEntry`, `ExerciseWithHistory`.
+
+`getSessionDetail` reuses the `WorkoutSession` type from `./workouts` (session with nested exercise logs and set logs). The other browse functions return lightweight summary types with aggregated counts.
+
+### Three History Pages
+
+**By Date** (`/history`) — Default view. Lists completed workout sessions ordered by `completedAt DESC`. Each session card shows the day of week, programme name, date, and exercise completion counts (e.g. "2/4 exercises · 1 skipped"). Cards link to session detail. A dropdown menu on each card provides a Delete action with AlertDialog confirmation.
+
+**By Exercise** (`/history/by-exercise`) — Lists all exercises that appear in completed sessions, grouped by exercise. Shows session count and last-performed date (relative format). Uses `getHistoryByExercise` which joins `exerciseLogs` with `workoutSessions` and groups by exercise ID.
+
+**Session Detail** (`/history/[sessionId]`) — Shows full detail for a single completed session: exercise log cards with set grids (weight, reps, unit per set), skipped badges, and delete actions for both the entire session and individual exercise logs. Back button returns to `/history`.
+
+### View Toggle Pattern
+
+The by-date and by-exercise pages share a view toggle at the top — a pair of `Button` components where the active view uses `variant="default"` and the inactive view uses `variant="ghost"` with an `href` link. This provides client-side navigation between the two views without a full page reload. Both pages render the toggle identically with `data-testid="view-toggle"`.
+
+### Delete Data Flow
+
+```
+User clicks Delete on session card or exercise log
+         │
+         ▼
+AlertDialog confirmation appears
+         │
+         ▼
+User confirms → form action submits via use:enhance
+         │
+         ▼
+Server: deleteSession(db, id) or deleteExerciseLog(db, id)
+  - SQLite cascade deletes handle child records
+  - deleteSession cascades to exercise_logs → set_logs
+  - deleteExerciseLog cascades to set_logs
+         │
+         ▼
+use:enhance invalidates page data → load re-runs → UI updates
+```
 
 ---
 
@@ -847,10 +890,13 @@ Each major user flow gets at least one E2E test:
    - Verify skipped exercises don't appear as "previous"
 
 4. **History flow**
-   - View history by date
-   - View history by exercise
-   - Verify skipped exercises show as skipped
-   - Delete a workout log
+   - View history by date with session cards
+   - Toggle between by-date and by-exercise views
+   - View session detail with exercise logs and set grids
+   - Verify skipped exercises display correctly with badges
+   - Delete an exercise log from session detail
+   - Delete a session from history list
+   - Verify deleted data no longer appears in by-exercise view
 
 5. **Exercise library flow**
    - View all exercises
@@ -899,11 +945,11 @@ src/
 │
 e2e/
 ├── global-setup.ts                 # Creates fresh test DB with migrations
+├── demo.test.ts                    # Basic smoke test
 ├── program-management.test.ts      # 8 serial tests for programs CRUD
-├── workout-logging.spec.ts         # (planned)
-├── progressive-overload.spec.ts    # (planned)
-├── history.spec.ts                 # (planned)
-├── exercise-library.spec.ts        # (planned)
+├── exercise-library.test.ts        # 5 serial tests for exercise management
+├── workout-flow.test.ts            # 6 serial tests for workout lifecycle
+├── history.test.ts                 # 7 serial tests for history views and deletion
 ├── export.spec.ts                  # (planned)
 └── resume-workout.spec.ts          # (planned)
 ```
@@ -1028,21 +1074,17 @@ workout-tracker/
 │   └── icons/                      # PWA icons
 ├── drizzle/
 │   └── migrations/                 # Generated migrations
-├── tests/
-│   └── e2e/                        # Playwright E2E tests
-│       ├── program-management.spec.ts
-│       ├── workout-logging.spec.ts
-│       ├── progressive-overload.spec.ts
-│       ├── history.spec.ts
-│       ├── exercise-library.spec.ts
-│       ├── export.spec.ts
-│       └── resume-workout.spec.ts
 ├── .github/
 │   └── workflows/
 │       ├── ci.yml                  # CI pipeline (lint, check, test, build)
 │       └── cd.yml                  # CD pipeline (Docker build, push to GHCR)
 ├── e2e/                            # Playwright E2E tests
-│   └── global-setup.ts            # Test DB migration setup
+│   ├── global-setup.ts             # Test DB migration setup
+│   ├── demo.test.ts
+│   ├── program-management.test.ts
+│   ├── exercise-library.test.ts
+│   ├── workout-flow.test.ts
+│   └── history.test.ts
 ├── data/                           # Local dev database (gitignored)
 ├── .env                            # Local dev env vars (gitignored)
 ├── .env.example                    # Template for env vars
@@ -1069,8 +1111,8 @@ workout-tracker/
 5. ~~**Programs CRUD**~~ - Create, edit, list, delete, duplicate, activate programs
 6. ~~**Exercise library**~~ - Auto-population, list, edit, delete
 7. ~~**Workout flow**~~ - Start, log sets, stop, summary
-8. **Progressive overload** - Previous/max queries and display _(next)_
-9. **History views** - By date, by exercise, delete logs
-10. **PWA/Offline** - Service worker, IndexedDB queue, sync
+8. ~~**Progressive overload**~~ - Previous/max queries and display
+9. ~~**History views**~~ - By date, by exercise, session detail, delete logs/sessions
+10. **PWA/Offline** - Service worker, IndexedDB queue, sync _(next)_
 11. **Export** - JSON and CSV download
 12. **Polish** - Empty states, loading states, error handling

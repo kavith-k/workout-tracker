@@ -25,6 +25,12 @@ export default defineConfig({
 			testMatch: /workout-flow\.test\.ts/,
 			dependencies: ['exercise-tests'],
 			use: { ...devices['Desktop Firefox'] }
+		},
+		{
+			name: 'history-tests',
+			testMatch: /history\.test\.ts/,
+			dependencies: ['workout-tests'],
+			use: { ...devices['Desktop Firefox'] }
 		}
 	]
 });
