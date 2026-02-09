@@ -10,7 +10,14 @@ export default defineConfig({
 	testDir: 'e2e',
 	projects: [
 		{
+			name: 'setup',
+			testMatch: /program-management\.test\.ts|demo\.test\.ts/,
+			use: { ...devices['Desktop Firefox'] }
+		},
+		{
 			name: 'firefox',
+			testIgnore: /program-management\.test\.ts|demo\.test\.ts/,
+			dependencies: ['setup'],
 			use: { ...devices['Desktop Firefox'] }
 		}
 	]
