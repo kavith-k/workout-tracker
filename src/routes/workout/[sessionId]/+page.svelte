@@ -1,0 +1,347 @@
+<script lang="ts">
+	import { enhance } from '$app/forms';
+	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
+	import { Badge } from '$lib/components/ui/badge';
+	import {
+		AlertDialog,
+		AlertDialogAction,
+		AlertDialogCancel,
+		AlertDialogContent,
+		AlertDialogDescription,
+		AlertDialogFooter,
+		AlertDialogHeader,
+		AlertDialogTitle
+	} from '$lib/components/ui/alert-dialog';
+	import {
+		Dialog,
+		DialogClose,
+		DialogContent,
+		DialogDescription,
+		DialogFooter,
+		DialogHeader,
+		DialogTitle
+	} from '$lib/components/ui/dialog';
+	import { Label } from '$lib/components/ui/label';
+	import { Separator } from '$lib/components/ui/separator';
+
+	let { data } = $props();
+
+	let stopDialogOpen = $state(false);
+	let adhocDialogOpen = $state(false);
+	let adhocExerciseName = $state('');
+	let selectedExerciseLogId = $state<number | null>(null);
+
+	// Navigate to a specific exercise by scrolling
+	function scrollToExercise(exerciseLogId: number) {
+		selectedExerciseLogId = exerciseLogId;
+		const el = document.getElementById(`exercise-log-${exerciseLogId}`);
+		if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+	}
+
+	function formatDate(date: Date): string {
+		return new Date(date).toLocaleDateString('en-GB', {
+			day: 'numeric',
+			month: 'short',
+			year: 'numeric'
+		});
+	}
+
+	function formatPreviousSets(sets: Array<{ weight: number; reps: number; unit: string }>): string {
+		return sets.map((s) => `${s.weight}${s.unit} x ${s.reps}`).join(', ');
+	}
+</script>
+
+<div class="space-y-4">
+	<div class="flex items-center justify-between">
+		<div>
+			<h1 class="text-xl font-bold" data-testid="workout-title">{data.session.dayName}</h1>
+			<p class="text-sm text-muted-foreground">{data.session.programName}</p>
+		</div>
+		{#if data.session.status === 'in_progress'}
+			<Button
+				variant="destructive"
+				size="sm"
+				onclick={() => (stopDialogOpen = true)}
+				data-testid="stop-workout-btn"
+			>
+				Stop Workout
+			</Button>
+		{/if}
+	</div>
+
+	{#if data.session.status === 'in_progress'}
+		<!-- Exercise navigator -->
+		<div class="flex gap-2 overflow-x-auto pb-2" data-testid="exercise-navigator">
+			{#each data.session.exerciseLogs as log (log.id)}
+				<button
+					class="shrink-0 rounded-full border px-3 py-1 text-sm transition-colors
+						{selectedExerciseLogId === log.id
+						? 'border-foreground bg-foreground text-background'
+						: 'border-border hover:bg-muted'}
+						{log.status === 'skipped' ? 'line-through opacity-50' : ''}"
+					onclick={() => scrollToExercise(log.id)}
+					data-testid="exercise-nav-{log.id}"
+				>
+					{log.exerciseName}
+				</button>
+			{/each}
+		</div>
+	{/if}
+
+	<Separator />
+
+	<!-- Exercise cards -->
+	<div class="space-y-6">
+		{#each data.session.exerciseLogs as log (log.id)}
+			<div
+				id="exercise-log-{log.id}"
+				class="rounded-lg border border-border p-4 {log.status === 'skipped' ? 'opacity-60' : ''}"
+				data-testid="exercise-card-{log.id}"
+			>
+				<div class="flex items-start justify-between">
+					<div>
+						<h3 class="font-semibold" data-testid="exercise-name-{log.id}">
+							{log.exerciseName}
+						</h3>
+						{#if log.isAdhoc}
+							<Badge variant="outline" class="mt-1">Ad-hoc</Badge>
+						{/if}
+					</div>
+					<div class="flex gap-2">
+						{#if data.session.status === 'in_progress'}
+							{#if log.status === 'skipped'}
+								<form method="POST" action="?/unskip" use:enhance>
+									<input type="hidden" name="exerciseLogId" value={log.id} />
+									<Button type="submit" variant="outline" size="sm" data-testid="unskip-{log.id}">
+										Unskip
+									</Button>
+								</form>
+							{:else}
+								<form method="POST" action="?/skip" use:enhance>
+									<input type="hidden" name="exerciseLogId" value={log.id} />
+									<Button type="submit" variant="ghost" size="sm" data-testid="skip-{log.id}">
+										Skip
+									</Button>
+								</form>
+							{/if}
+						{/if}
+					</div>
+				</div>
+
+				<!-- Progressive overload hints -->
+				{#if data.progressiveOverload[log.id]}
+					{@const overload = data.progressiveOverload[log.id]}
+					<div class="mt-2 space-y-0.5 text-xs text-muted-foreground">
+						{#if overload.previous}
+							<p data-testid="previous-hint-{log.id}">
+								Previous ({formatDate(overload.previous.date)}): {formatPreviousSets(
+									overload.previous.sets
+								)}
+							</p>
+						{/if}
+						{#if overload.max}
+							<p data-testid="max-hint-{log.id}">
+								Max: {overload.max.weight}{overload.max.unit} x {overload.max.reps} reps ({formatDate(
+									overload.max.date
+								)})
+							</p>
+						{/if}
+					</div>
+				{/if}
+
+				{#if log.status !== 'skipped'}
+					<!-- Set rows -->
+					<div class="mt-3 space-y-2">
+						<div
+							class="grid grid-cols-[2rem_1fr_1fr_auto] items-center gap-2 text-xs font-medium text-muted-foreground"
+						>
+							<span>Set</span>
+							<span>Weight</span>
+							<span>Reps</span>
+							<span></span>
+						</div>
+						{#each log.sets as set (set.id)}
+							<div
+								class="grid grid-cols-[2rem_1fr_1fr_auto] items-center gap-2"
+								data-testid="set-row-{set.id}"
+							>
+								<span class="text-center text-sm text-muted-foreground">{set.setNumber}</span>
+								<form
+									id="set-form-{set.id}"
+									method="POST"
+									action="?/updateSet"
+									use:enhance={() => {
+										return async () => {
+											// Skip update() to avoid re-rendering inputs during
+											// active editing — data is saved server-side
+										};
+									}}
+									class="contents"
+								>
+									<input type="hidden" name="setLogId" value={set.id} />
+									<input type="hidden" name="exerciseLogId" value={log.id} />
+									<input type="hidden" name="exerciseId" value={log.exerciseId} />
+									<div class="relative">
+										<Input
+											type="number"
+											name="weight"
+											value={set.weight ?? ''}
+											placeholder="0"
+											step="0.5"
+											min="0"
+											inputmode="decimal"
+											class="pr-8"
+											onchange={(e) => e.currentTarget.form?.requestSubmit()}
+											data-testid="weight-input-{set.id}"
+										/>
+										<button
+											type="button"
+											class="absolute top-1/2 right-2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground"
+											onclick={(e) => {
+												const form = e.currentTarget.closest('form');
+												if (!form) return;
+												const unitInput =
+													form.querySelector<HTMLInputElement>('input[name="unit"]');
+												if (unitInput) {
+													unitInput.value = unitInput.value === 'kg' ? 'lbs' : 'kg';
+													form.requestSubmit();
+												}
+											}}
+											data-testid="unit-toggle-{set.id}"
+										>
+											{set.unit}
+										</button>
+										<input type="hidden" name="unit" value={set.unit} />
+									</div>
+									<Input
+										type="number"
+										name="reps"
+										value={set.reps ?? ''}
+										placeholder="0"
+										min="0"
+										inputmode="numeric"
+										onchange={(e) => e.currentTarget.form?.requestSubmit()}
+										data-testid="reps-input-{set.id}"
+									/>
+								</form>
+								{#if data.session.status === 'in_progress' && log.sets.length > 1}
+									<form method="POST" action="?/removeSet" use:enhance>
+										<input type="hidden" name="setLogId" value={set.id} />
+										<Button
+											type="submit"
+											variant="ghost"
+											size="icon-sm"
+											class="text-muted-foreground"
+											data-testid="remove-set-{set.id}"
+										>
+											&times;
+										</Button>
+									</form>
+								{:else}
+									<div class="w-8"></div>
+								{/if}
+							</div>
+						{/each}
+					</div>
+
+					{#if data.session.status === 'in_progress'}
+						<form method="POST" action="?/addSet" use:enhance class="mt-2">
+							<input type="hidden" name="exerciseLogId" value={log.id} />
+							<Button
+								type="submit"
+								variant="ghost"
+								size="sm"
+								class="text-muted-foreground"
+								data-testid="add-set-{log.id}"
+							>
+								+ Add Set
+							</Button>
+						</form>
+					{/if}
+				{/if}
+			</div>
+		{/each}
+	</div>
+
+	{#if data.session.status === 'in_progress'}
+		<div class="flex justify-center pb-4">
+			<Button
+				variant="outline"
+				onclick={() => (adhocDialogOpen = true)}
+				data-testid="add-adhoc-btn"
+			>
+				+ Add Exercise
+			</Button>
+		</div>
+	{/if}
+</div>
+
+<!-- Stop Workout Confirmation -->
+<AlertDialog bind:open={stopDialogOpen}>
+	<AlertDialogContent>
+		<AlertDialogHeader>
+			<AlertDialogTitle>Stop Workout?</AlertDialogTitle>
+			<AlertDialogDescription>
+				Any exercises without logged sets will be marked as skipped. You can review your summary
+				afterwards.
+			</AlertDialogDescription>
+		</AlertDialogHeader>
+		<AlertDialogFooter>
+			<AlertDialogCancel>Continue Workout</AlertDialogCancel>
+			<form method="POST" action="?/stop" use:enhance class="contents">
+				<input type="hidden" name="sessionId" value={data.session.id} />
+				<AlertDialogAction type="submit" data-testid="confirm-stop-btn">
+					Stop Workout
+				</AlertDialogAction>
+			</form>
+		</AlertDialogFooter>
+	</AlertDialogContent>
+</AlertDialog>
+
+<!-- Add Ad-hoc Exercise Dialog -->
+<Dialog bind:open={adhocDialogOpen}>
+	<DialogContent>
+		<DialogHeader>
+			<DialogTitle>Add Exercise</DialogTitle>
+			<DialogDescription>
+				Add an extra exercise to this workout. If the exercise is new, it will be added to your
+				library.
+			</DialogDescription>
+		</DialogHeader>
+		<form
+			method="POST"
+			action="?/addAdhoc"
+			use:enhance={() => {
+				return async ({ update }) => {
+					adhocDialogOpen = false;
+					adhocExerciseName = '';
+					await update();
+				};
+			}}
+			class="space-y-4"
+		>
+			<input type="hidden" name="sessionId" value={data.session.id} />
+			<div class="space-y-2">
+				<Label for="adhoc-name">Exercise Name</Label>
+				<Input
+					id="adhoc-name"
+					name="exerciseName"
+					bind:value={adhocExerciseName}
+					placeholder="e.g., Lateral Raise"
+					data-testid="adhoc-exercise-input"
+				/>
+			</div>
+			<DialogFooter>
+				<DialogClose>
+					{#snippet child({ props })}
+						<Button variant="outline" {...props}>Cancel</Button>
+					{/snippet}
+				</DialogClose>
+				<Button type="submit" disabled={!adhocExerciseName.trim()} data-testid="adhoc-submit-btn">
+					Add
+				</Button>
+			</DialogFooter>
+		</form>
+	</DialogContent>
+</Dialog>

@@ -4,7 +4,13 @@
 	import ResumeWorkoutBanner from '$lib/components/shared/ResumeWorkoutBanner.svelte';
 	import OfflineIndicator from '$lib/components/shared/OfflineIndicator.svelte';
 
-	let { children }: { children: Snippet } = $props();
+	let {
+		children,
+		inProgressWorkout = null
+	}: {
+		children: Snippet;
+		inProgressWorkout?: { id: number; dayName: string; programName: string } | null;
+	} = $props();
 </script>
 
 <div class="flex min-h-svh flex-col">
@@ -15,7 +21,7 @@
 		</div>
 	</header>
 
-	<ResumeWorkoutBanner />
+	<ResumeWorkoutBanner {inProgressWorkout} />
 
 	<main class="flex-1 px-4 py-4">
 		{@render children()}
