@@ -9,5 +9,8 @@ bun.lockb
 /static/
 /drizzle/
 
+# Markdown
+*.md
+
 # Claude Code local settings (auto-modified, not project code)
 .claude/settings.local.json
