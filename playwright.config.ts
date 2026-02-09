@@ -15,9 +15,15 @@ export default defineConfig({
 			use: { ...devices['Desktop Firefox'] }
 		},
 		{
-			name: 'firefox',
-			testIgnore: /program-management\.test\.ts|demo\.test\.ts/,
+			name: 'exercise-tests',
+			testMatch: /exercise-library\.test\.ts/,
 			dependencies: ['setup'],
+			use: { ...devices['Desktop Firefox'] }
+		},
+		{
+			name: 'workout-tests',
+			testMatch: /workout-flow\.test\.ts/,
+			dependencies: ['exercise-tests'],
 			use: { ...devices['Desktop Firefox'] }
 		}
 	]
