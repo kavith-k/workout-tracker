@@ -574,6 +574,32 @@ use:enhance invalidates page data → load re-runs → UI updates
 
 ---
 
+## Settings & Export Architecture
+
+### Query Module
+
+`src/lib/server/db/queries/export.ts` contains 2 functions for data export. Key exports:
+
+- `exportAsJSON(db)` — Assembles full JSON export with programs (including days, exercises, progressive overload data), and exercise library
+- `exportAsCSV(db)` — Assembles denormalized CSV with one row per set from completed sessions
+
+Custom type exported: `ExportJSON`.
+
+### Export Endpoints
+
+Two GET-only server endpoints serve downloads:
+
+- `GET /settings/export/json` — Returns `workout-tracker-export.json` with `Content-Disposition: attachment`
+- `GET /settings/export/csv` — Returns `workout-tracker-export.csv` with `Content-Disposition: attachment`
+
+Both import `db` from `$lib/server/db` and delegate to their respective query functions.
+
+### Settings Page
+
+`/settings` displays export buttons as anchor-styled `Button` components with `href` links to the download endpoints. No form actions needed since exports are idempotent GET requests.
+
+---
+
 ## Offline / PWA Strategy
 
 ### Service Worker Setup
@@ -929,7 +955,9 @@ src/
 │   │   │       ├── workouts.ts
 │   │   │       ├── workouts.test.ts        # Unit tests
 │   │   │       ├── history.ts
-│   │   │       └── history.test.ts         # Unit tests
+│   │   │       ├── history.test.ts         # Unit tests
+│   │   │       ├── export.ts
+│   │   │       └── export.test.ts          # Unit tests
 │   │   └── utils/
 │   │       ├── stale-workout.ts
 │   │       └── stale-workout.test.ts       # Unit tests
@@ -950,7 +978,7 @@ e2e/
 ├── exercise-library.test.ts        # 5 serial tests for exercise management
 ├── workout-flow.test.ts            # 6 serial tests for workout lifecycle
 ├── history.test.ts                 # 7 serial tests for history views and deletion
-├── export.spec.ts                  # (planned)
+├── export.test.ts                  # 3 serial tests for export functionality
 └── resume-workout.spec.ts          # (planned)
 ```
 
@@ -1113,6 +1141,6 @@ workout-tracker/
 7. ~~**Workout flow**~~ - Start, log sets, stop, summary
 8. ~~**Progressive overload**~~ - Previous/max queries and display
 9. ~~**History views**~~ - By date, by exercise, session detail, delete logs/sessions
-10. **PWA/Offline** - Service worker, IndexedDB queue, sync _(next)_
-11. **Export** - JSON and CSV download
+10. ~~**Settings & Export**~~ - JSON and CSV export with download endpoints
+11. **PWA/Offline** - Service worker, IndexedDB queue, sync _(next)_
 12. **Polish** - Empty states, loading states, error handling
