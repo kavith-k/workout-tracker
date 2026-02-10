@@ -1,4 +1,4 @@
-import { getQueuedActions, removeFromQueue, incrementRetryCount } from './queue';
+import { getQueuedActions, removeFromQueue, incrementRetryCount, MAX_RETRY_COUNT } from './queue';
 import { offlineState, updatePendingCount } from './stores.svelte';
 
 let syncInterval: ReturnType<typeof setInterval> | null = null;
@@ -24,10 +24,16 @@ export async function syncQueue(): Promise<void> {
 			if (response.ok) {
 				await removeFromQueue(action.id);
 			} else {
-				await incrementRetryCount(action.id);
+				const retries = await incrementRetryCount(action.id);
+				if (retries > MAX_RETRY_COUNT) {
+					await removeFromQueue(action.id);
+				}
 			}
 		} catch {
-			await incrementRetryCount(action.id);
+			const retries = await incrementRetryCount(action.id);
+			if (retries > MAX_RETRY_COUNT) {
+				await removeFromQueue(action.id);
+			}
 		}
 		await updatePendingCount();
 	}

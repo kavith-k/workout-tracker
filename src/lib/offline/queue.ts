@@ -27,6 +27,8 @@ export interface QueuedAction {
 	retryCount: number;
 }
 
+export const MAX_RETRY_COUNT = 10;
+
 const DB_NAME = 'workout-tracker-offline';
 const STORE_NAME = 'sync-queue';
 const DB_VERSION = 1;
@@ -81,15 +83,17 @@ export async function removeFromQueue(id: string): Promise<void> {
 	await resolved.delete(STORE_NAME, id);
 }
 
-export async function incrementRetryCount(id: string): Promise<void> {
+export async function incrementRetryCount(id: string): Promise<number> {
 	const db = getDb();
-	if (!db) return;
+	if (!db) return 0;
 	const resolved = await db;
 	const entry = (await resolved.get(STORE_NAME, id)) as QueuedAction | undefined;
 	if (entry) {
 		entry.retryCount++;
 		await resolved.put(STORE_NAME, entry);
+		return entry.retryCount;
 	}
+	return 0;
 }
 
 export async function getQueueLength(): Promise<number> {

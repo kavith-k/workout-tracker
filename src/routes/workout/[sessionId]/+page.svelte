@@ -25,7 +25,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Separator } from '$lib/components/ui/separator';
 	import { addToQueue, type ActionType } from '$lib/offline/queue';
-	import { updatePendingCount } from '$lib/offline/stores.svelte';
+	import { offlineState, updatePendingCount } from '$lib/offline/stores.svelte';
 
 	let { data } = $props();
 
@@ -34,8 +34,11 @@
 		await updatePendingCount();
 	}
 
-	function isNetworkError(result: { type: string }) {
-		return result.type === 'error';
+	function isNetworkError(result: { type: string; error?: unknown; status?: number }) {
+		if (result.type !== 'error') return false;
+		if (!offlineState.isOnline) return true;
+		if (result.status && result.status >= 400) return false;
+		return true;
 	}
 
 	let stopDialogOpen = $state(false);
@@ -79,6 +82,15 @@
 			</Button>
 		{/if}
 	</div>
+
+	{#if data.session.status === 'completed'}
+		<div
+			class="rounded-lg border border-border bg-muted/50 p-4 text-center text-sm text-muted-foreground"
+			data-testid="offline-completed-banner"
+		>
+			Workout stopped (pending sync)
+		</div>
+	{/if}
 
 	{#if data.session.status === 'in_progress'}
 		<!-- Exercise navigator -->
@@ -130,6 +142,8 @@
 												await queueAction('UNSKIP_EXERCISE', {
 													exerciseLogId: log.id
 												});
+												const unskipLog = data.session.exerciseLogs.find((l) => l.id === log.id);
+												if (unskipLog) unskipLog.status = 'logged';
 											} else {
 												await update();
 											}
@@ -151,6 +165,8 @@
 												await queueAction('SKIP_EXERCISE', {
 													exerciseLogId: log.id
 												});
+												const skipLog = data.session.exerciseLogs.find((l) => l.id === log.id);
+												if (skipLog) skipLog.status = 'skipped';
 											} else {
 												await update();
 											}
@@ -221,6 +237,20 @@
 													reps: reps === '' ? null : Number(reps),
 													unit: formData.get('unit')
 												});
+												for (const exerciseLog of data.session.exerciseLogs) {
+													const setEntry = exerciseLog.sets.find(
+														(s) => s.id === Number(formData.get('setLogId'))
+													);
+													if (setEntry) {
+														const w = formData.get('weight');
+														const r = formData.get('reps');
+														const u = formData.get('unit') as 'kg' | 'lbs' | null;
+														if (w !== null) setEntry.weight = w === '' ? null : Number(w);
+														if (r !== null) setEntry.reps = r === '' ? null : Number(r);
+														if (u) setEntry.unit = u;
+														break;
+													}
+												}
 											}
 										};
 									}}
@@ -282,6 +312,14 @@
 													await queueAction('REMOVE_SET', {
 														setLogId: set.id
 													});
+													for (const exerciseLog of data.session.exerciseLogs) {
+														const idx = exerciseLog.sets.findIndex((s) => s.id === set.id);
+														if (idx !== -1) {
+															exerciseLog.sets.splice(idx, 1);
+															exerciseLog.sets.forEach((s, i) => (s.setNumber = i + 1));
+															break;
+														}
+													}
 												} else {
 													await update();
 												}
@@ -316,6 +354,19 @@
 										await queueAction('ADD_SET', {
 											exerciseLogId: log.id
 										});
+										const targetLog = data.session.exerciseLogs.find((l) => l.id === log.id);
+										if (targetLog) {
+											const lastSet = targetLog.sets[targetLog.sets.length - 1];
+											targetLog.sets.push({
+												id: -Date.now(),
+												exerciseLogId: log.id,
+												setNumber: targetLog.sets.length + 1,
+												weight: null,
+												reps: null,
+												unit: lastSet?.unit ?? 'kg',
+												createdAt: new Date()
+											});
+										}
 									} else {
 										await update();
 									}
@@ -375,6 +426,7 @@
 								sessionId: data.session.id
 							});
 							stopDialogOpen = false;
+							data.session.status = 'completed';
 						} else {
 							await update();
 						}
@@ -410,6 +462,47 @@
 						await queueAction('ADD_ADHOC', {
 							sessionId: data.session.id,
 							exerciseName: adhocExerciseName.trim()
+						});
+						const now = Date.now();
+						const placeholderId = -now;
+						data.session.exerciseLogs.push({
+							id: placeholderId,
+							exerciseId: null,
+							sessionId: data.session.id,
+							exerciseName: adhocExerciseName.trim(),
+							status: 'logged',
+							isAdhoc: true,
+							sortOrder: data.session.exerciseLogs.length,
+							createdAt: new Date(),
+							sets: [
+								{
+									id: -(now + 1),
+									exerciseLogId: placeholderId,
+									setNumber: 1,
+									weight: null,
+									reps: null,
+									unit: 'kg',
+									createdAt: new Date()
+								},
+								{
+									id: -(now + 2),
+									exerciseLogId: placeholderId,
+									setNumber: 2,
+									weight: null,
+									reps: null,
+									unit: 'kg',
+									createdAt: new Date()
+								},
+								{
+									id: -(now + 3),
+									exerciseLogId: placeholderId,
+									setNumber: 3,
+									weight: null,
+									reps: null,
+									unit: 'kg',
+									createdAt: new Date()
+								}
+							]
 						});
 						adhocDialogOpen = false;
 						adhocExerciseName = '';
