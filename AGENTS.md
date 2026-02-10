@@ -117,6 +117,10 @@ gh pr status
 gh pr checks <pr-number>
 ```
 
+## Playwright CLI
+
+The `playwright-cli` skill is available for any Playwright browser automation actions (navigating pages, interacting with elements, taking screenshots, extracting data, etc.). Run `playwright-cli --help` for available commands.
+
 ## Phase Verification
 
 At the end of each phase, a verifier subagent MUST be kicked off to check:
