@@ -11,7 +11,7 @@
 </script>
 
 <a
-	href={resolve(href)}
+	href={resolve(href as `/`)}
 	class={[
 		'flex min-h-11 items-center rounded-md px-3 text-base font-medium transition-colors',
 		isActive ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-accent'
