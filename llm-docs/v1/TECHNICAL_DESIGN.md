@@ -598,129 +598,164 @@ The settings page (`/settings/+page.svelte`) provides two download buttons linki
 
 ---
 
-## Offline / PWA Strategy
+## Offline / PWA Architecture
 
 ### Service Worker Setup
 
-Using `vite-plugin-pwa` with SvelteKit:
+Using `@vite-pwa/sveltekit` with `generateSW` strategy and `autoUpdate` registration. Configured in `vite.config.ts`:
 
-```typescript
-// vite.config.ts
-import { sveltekit } from '@sveltejs/kit/vite';
-import { SvelteKitPWA } from '@vite-pwa/sveltekit';
+- **Strategy**: `generateSW` — Workbox auto-generates the service worker
+- **Register type**: `autoUpdate` — forces `skipWaiting` and `clientsClaim` for seamless updates
+- **Precaching**: All `*.{js,css,html,ico,png,svg,woff2}` assets via `globPatterns`
+- **Navigate fallback**: `/` — serves the SPA shell for all navigation requests when offline
+- **Dev mode**: Disabled (`devOptions.enabled: false`)
 
-export default {
-	plugins: [
-		sveltekit(),
-		SvelteKitPWA({
-			strategies: 'generateSW',
-			registerType: 'autoUpdate',
-			workbox: {
-				globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-				runtimeCaching: [
-					{
-						urlPattern: /^https?:\/\/.*\/api\/.*/,
-						handler: 'NetworkFirst',
-						options: {
-							cacheName: 'api-cache',
-							networkTimeoutSeconds: 3
-						}
-					}
-				]
-			}
-		})
-	]
-};
+PWA manifest defines `standalone` display mode with monochromatic theme (`#000000` / `#ffffff`) and three icon sizes (192px, 512px, 512px maskable). Icons are in `static/`.
+
+### Offline Module Structure
+
+```
+src/lib/offline/
+├── queue.ts            # IndexedDB queue for pending write actions
+├── stores.svelte.ts    # Svelte 5 reactive state (online/sync status)
+└── sync.ts             # Sync engine (periodic + on-reconnect)
 ```
 
 ### Offline Data Flow
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        Browser                               │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────────┐  │
-│  │   Svelte    │───>│  IndexedDB  │───>│ Service Worker  │  │
-│  │   App       │<───│  (Queue)    │<───│ (Background)    │  │
-│  └─────────────┘    └─────────────┘    └─────────────────┘  │
-│         │                                      │             │
-└─────────┼──────────────────────────────────────┼─────────────┘
-          │                                      │
-          │ Online                               │ Sync when online
-          ▼                                      ▼
-    ┌───────────────────────────────────────────────┐
-    │                   Server                       │
-    │              /api/sync endpoint                │
-    └───────────────────────────────────────────────┘
+User performs action (e.g. log a set)
+         │
+         ▼
+Form submits via use:enhance
+         │
+         ├─ Server reachable ─────> Normal SvelteKit form action
+         │                          (updateSetLog, skipExercise, etc.)
+         │
+         └─ Network error ────────> Queue action to IndexedDB
+                                    via addToQueue()
+                                           │
+                                           ▼
+                                    OfflineIndicator shows
+                                    pending sync count
+                                           │
+                                           ▼
+                                    On reconnect (or 30s timer):
+                                    syncQueue() processes queue
+                                           │
+                                           ▼
+                                    POST /api/sync with each action
+                                    → calls existing query functions
+                                    → remove from queue on success
+                                    → increment retryCount on failure
 ```
 
-### IndexedDB Queue Structure
+### IndexedDB Queue (`src/lib/offline/queue.ts`)
+
+Uses the `idb` library wrapping an IndexedDB database called `workout-tracker-offline` (version 1) with an object store `sync-queue` keyed on `id`.
+
+**Types:**
 
 ```typescript
-// src/lib/offline/queue.ts
+type ActionType =
+	| 'UPDATE_SET' | 'SKIP_EXERCISE' | 'UNSKIP_EXERCISE' | 'COMPLETE_WORKOUT'
+	| 'ADD_ADHOC' | 'ADD_SET' | 'REMOVE_SET' | 'UPDATE_UNIT';
 
 interface QueuedAction {
-	id: string; // UUID
-	timestamp: number; // When queued
-	action: 'UPDATE_SET' | 'SKIP_EXERCISE' | 'COMPLETE_WORKOUT';
+	id: string;           // crypto.randomUUID()
+	timestamp: number;    // Date.now() when queued
+	action: ActionType;
 	payload: {
 		setLogId?: number;
-		weight?: number;
-		reps?: number;
+		weight?: number | null;
+		reps?: number | null;
 		unit?: 'kg' | 'lbs';
 		exerciseLogId?: number;
+		exerciseId?: number;
 		sessionId?: number;
+		exerciseName?: string;
 	};
-	retryCount: number;
+	retryCount: number;   // starts at 0, incremented on each failed sync
 }
 ```
 
-### Sync Logic
+**Exports:** `addToQueue(action, payload)`, `getQueuedActions()`, `removeFromQueue(id)`, `incrementRetryCount(id)`, `getQueueLength()`, `clearQueue()`. All functions are SSR-safe (return no-ops when `window` is undefined). DB connection is lazily initialised on first use.
+
+### Offline Stores (`src/lib/offline/stores.svelte.ts`)
+
+Uses Svelte 5 `$state` runes in a `.svelte.ts` module for reactive state shared across components:
 
 ```typescript
-// Pseudo-code for sync
-
-async function syncQueue() {
-	const queue = await getQueuedActions();
-
-	for (const action of queue) {
-		try {
-			await fetch('/api/sync', {
-				method: 'POST',
-				body: JSON.stringify(action)
-			});
-			await removeFromQueue(action.id);
-		} catch (error) {
-			// Will retry on next sync
-			await incrementRetryCount(action.id);
-		}
-	}
+class OfflineState {
+	isOnline = $state(true);
+	pendingSyncCount = $state(0);
+	isSyncing = $state(false);
 }
-
-// Trigger sync when online
-window.addEventListener('online', syncQueue);
-
-// Also try to sync periodically when app is active
-setInterval(syncQueue, 30000); // Every 30 seconds
+export const offlineState = new OfflineState();
 ```
 
-### Offline UI Indicator
+**Exports:**
+- `offlineState` — singleton reactive state object
+- `initOfflineListeners()` — sets initial `navigator.onLine`, adds `online`/`offline` event listeners, returns cleanup function
+- `updatePendingCount()` — reads queue length and updates `offlineState.pendingSyncCount`
+
+### Sync Engine (`src/lib/offline/sync.ts`)
+
+**Exports:**
+- `syncQueue()` — processes all queued actions sequentially via `POST /api/sync`. Removes successful items, increments `retryCount` for failures. Guards against re-entry (`isSyncing`) and offline state. Updates `pendingSyncCount` throughout.
+- `startPeriodicSync()` — sets up 30-second `setInterval` for `syncQueue`
+- `stopPeriodicSync()` — clears the interval
+- `setupSyncListeners()` — adds `online` event listener for immediate sync, starts periodic sync, triggers initial sync, returns cleanup function
+
+### /api/sync Endpoint (`src/routes/api/sync/+server.ts`)
+
+POST handler that accepts `{ action, payload }` JSON body and dispatches to existing query functions:
+
+| Action | Query Function |
+| --- | --- |
+| `UPDATE_SET` | `updateSetLog()` + conditionally `updateExerciseUnitPreference()` |
+| `SKIP_EXERCISE` | `skipExercise()` |
+| `UNSKIP_EXERCISE` | `unskipExercise()` |
+| `COMPLETE_WORKOUT` | `completeWorkout()` |
+| `ADD_ADHOC` | `addAdhocExercise()` |
+| `ADD_SET` | `addSetToExerciseLog()` |
+| `REMOVE_SET` | `removeSetFromExerciseLog()` |
+| `UPDATE_UNIT` | `updateExerciseUnitPreference()` |
+
+Returns `{ success: true }` on success, `{ success: false, error }` with 400/500 status on failure.
+
+### Offline Form Handling Pattern
+
+All workout logging forms in `/workout/[sessionId]/+page.svelte` use a consistent pattern for offline fallback:
 
 ```svelte
-<!-- OfflineIndicator.svelte -->
-<script>
-	import { onlineStatus, pendingSyncCount } from '$lib/offline/stores';
-</script>
-
-{#if !$onlineStatus || $pendingSyncCount > 0}
-	<div class="fixed right-4 bottom-4 rounded-full bg-gray-800 px-3 py-1 text-sm text-white">
-		{#if !$onlineStatus}
-			Offline
-		{:else if $pendingSyncCount > 0}
-			Syncing {$pendingSyncCount}...
-		{/if}
-	</div>
-{/if}
+use:enhance={({ formData }) => {
+	return async ({ result, update }) => {
+		if (result.type === 'error') {
+			// Network failure — queue for later sync
+			await queueAction('ACTION_TYPE', { /* extracted from formData */ });
+		} else {
+			await update(); // Normal server response
+		}
+	};
+}}
 ```
+
+The `isNetworkError()` helper checks `result.type === 'error'` which is how SvelteKit's `use:enhance` reports network failures. Seven form actions are covered: `updateSet`, `skip`, `unskip`, `removeSet`, `addSet`, `stop`, and `addAdhoc`.
+
+### OfflineIndicator Integration
+
+`src/lib/components/shared/OfflineIndicator.svelte` imports `offlineState` from the stores module and renders a fixed-position pill at bottom-right:
+
+- **Offline**: Shows "Offline" when `!offlineState.isOnline`
+- **Syncing**: Shows "Syncing N..." when online and `pendingSyncCount > 0`
+- **Hidden**: Not rendered when fully connected with no pending actions
+
+Already mounted in `AppShell.svelte` (below the main content area).
+
+### Initialisation
+
+The root layout (`src/routes/+layout.svelte`) initialises both offline listeners and sync on mount via `onMount()`, calling `initOfflineListeners()` and `setupSyncListeners()`. Both return cleanup functions that are invoked on unmount
 
 ---
 
@@ -1138,5 +1173,5 @@ workout-tracker/
 8. ~~**Progressive overload**~~ - Previous/max queries and display
 9. ~~**History views**~~ - By date, by exercise, session detail, delete logs/sessions
 10. ~~**Export**~~ - JSON and CSV download
-11. **PWA/Offline** - Service worker, IndexedDB queue, sync _(next)_
-12. **Polish** - Empty states, loading states, error handling
+11. ~~**PWA/Offline**~~ - Service worker, IndexedDB queue, sync
+12. **Polish** - Empty states, loading states, error handling _(next)_

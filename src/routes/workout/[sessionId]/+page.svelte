@@ -24,15 +24,28 @@
 	} from '$lib/components/ui/dialog';
 	import { Label } from '$lib/components/ui/label';
 	import { Separator } from '$lib/components/ui/separator';
+	import { addToQueue, type ActionType } from '$lib/offline/queue';
+	import { offlineState, updatePendingCount } from '$lib/offline/stores.svelte';
 
 	let { data } = $props();
+
+	async function queueAction(action: ActionType, payload: Record<string, unknown>) {
+		await addToQueue(action, payload);
+		await updatePendingCount();
+	}
+
+	function isNetworkError(result: { type: string; error?: unknown; status?: number }) {
+		if (result.type !== 'error') return false;
+		if (!offlineState.isOnline) return true;
+		if (result.status && result.status >= 400) return false;
+		return true;
+	}
 
 	let stopDialogOpen = $state(false);
 	let adhocDialogOpen = $state(false);
 	let adhocExerciseName = $state('');
 	let selectedExerciseLogId = $state<number | null>(null);
 
-	// Navigate to a specific exercise by scrolling
 	function scrollToExercise(exerciseLogId: number) {
 		selectedExerciseLogId = exerciseLogId;
 		const el = document.getElementById(`exercise-log-${exerciseLogId}`);
@@ -69,6 +82,15 @@
 			</Button>
 		{/if}
 	</div>
+
+	{#if data.session.status === 'completed'}
+		<div
+			class="rounded-lg border border-border bg-muted/50 p-4 text-center text-sm text-muted-foreground"
+			data-testid="offline-completed-banner"
+		>
+			Workout stopped (pending sync)
+		</div>
+	{/if}
 
 	{#if data.session.status === 'in_progress'}
 		<!-- Exercise navigator -->
@@ -111,14 +133,46 @@
 					<div class="flex gap-2">
 						{#if data.session.status === 'in_progress'}
 							{#if log.status === 'skipped'}
-								<form method="POST" action="?/unskip" use:enhance>
+								<form
+									method="POST"
+									action="?/unskip"
+									use:enhance={() => {
+										return async ({ result, update }) => {
+											if (isNetworkError(result)) {
+												await queueAction('UNSKIP_EXERCISE', {
+													exerciseLogId: log.id
+												});
+												const unskipLog = data.session.exerciseLogs.find((l) => l.id === log.id);
+												if (unskipLog) unskipLog.status = 'logged';
+											} else {
+												await update();
+											}
+										};
+									}}
+								>
 									<input type="hidden" name="exerciseLogId" value={log.id} />
 									<Button type="submit" variant="outline" size="sm" data-testid="unskip-{log.id}">
 										Unskip
 									</Button>
 								</form>
 							{:else}
-								<form method="POST" action="?/skip" use:enhance>
+								<form
+									method="POST"
+									action="?/skip"
+									use:enhance={() => {
+										return async ({ result, update }) => {
+											if (isNetworkError(result)) {
+												await queueAction('SKIP_EXERCISE', {
+													exerciseLogId: log.id
+												});
+												const skipLog = data.session.exerciseLogs.find((l) => l.id === log.id);
+												if (skipLog) skipLog.status = 'skipped';
+											} else {
+												await update();
+											}
+										};
+									}}
+								>
 									<input type="hidden" name="exerciseLogId" value={log.id} />
 									<Button type="submit" variant="ghost" size="sm" data-testid="skip-{log.id}">
 										Skip
@@ -171,10 +225,33 @@
 									id="set-form-{set.id}"
 									method="POST"
 									action="?/updateSet"
-									use:enhance={() => {
-										return async () => {
-											// Skip update() to avoid re-rendering inputs during
-											// active editing — data is saved server-side
+									use:enhance={({ formData }) => {
+										return async ({ result }) => {
+											if (isNetworkError(result)) {
+												const weight = formData.get('weight');
+												const reps = formData.get('reps');
+												await queueAction('UPDATE_SET', {
+													setLogId: Number(formData.get('setLogId')),
+													exerciseId: Number(formData.get('exerciseId')),
+													weight: weight === '' ? null : Number(weight),
+													reps: reps === '' ? null : Number(reps),
+													unit: formData.get('unit')
+												});
+												for (const exerciseLog of data.session.exerciseLogs) {
+													const setEntry = exerciseLog.sets.find(
+														(s) => s.id === Number(formData.get('setLogId'))
+													);
+													if (setEntry) {
+														const w = formData.get('weight');
+														const r = formData.get('reps');
+														const u = formData.get('unit') as 'kg' | 'lbs' | null;
+														if (w !== null) setEntry.weight = w === '' ? null : Number(w);
+														if (r !== null) setEntry.reps = r === '' ? null : Number(r);
+														if (u) setEntry.unit = u;
+														break;
+													}
+												}
+											}
 										};
 									}}
 									class="contents"
@@ -226,7 +303,29 @@
 									/>
 								</form>
 								{#if data.session.status === 'in_progress' && log.sets.length > 1}
-									<form method="POST" action="?/removeSet" use:enhance>
+									<form
+										method="POST"
+										action="?/removeSet"
+										use:enhance={() => {
+											return async ({ result, update }) => {
+												if (isNetworkError(result)) {
+													await queueAction('REMOVE_SET', {
+														setLogId: set.id
+													});
+													for (const exerciseLog of data.session.exerciseLogs) {
+														const idx = exerciseLog.sets.findIndex((s) => s.id === set.id);
+														if (idx !== -1) {
+															exerciseLog.sets.splice(idx, 1);
+															exerciseLog.sets.forEach((s, i) => (s.setNumber = i + 1));
+															break;
+														}
+													}
+												} else {
+													await update();
+												}
+											};
+										}}
+									>
 										<input type="hidden" name="setLogId" value={set.id} />
 										<Button
 											type="submit"
@@ -246,7 +345,35 @@
 					</div>
 
 					{#if data.session.status === 'in_progress'}
-						<form method="POST" action="?/addSet" use:enhance class="mt-2">
+						<form
+							method="POST"
+							action="?/addSet"
+							use:enhance={() => {
+								return async ({ result, update }) => {
+									if (isNetworkError(result)) {
+										await queueAction('ADD_SET', {
+											exerciseLogId: log.id
+										});
+										const targetLog = data.session.exerciseLogs.find((l) => l.id === log.id);
+										if (targetLog) {
+											const lastSet = targetLog.sets[targetLog.sets.length - 1];
+											targetLog.sets.push({
+												id: -Date.now(),
+												exerciseLogId: log.id,
+												setNumber: targetLog.sets.length + 1,
+												weight: null,
+												reps: null,
+												unit: lastSet?.unit ?? 'kg',
+												createdAt: new Date()
+											});
+										}
+									} else {
+										await update();
+									}
+								};
+							}}
+							class="mt-2"
+						>
 							<input type="hidden" name="exerciseLogId" value={log.id} />
 							<Button
 								type="submit"
@@ -289,7 +416,24 @@
 		</AlertDialogHeader>
 		<AlertDialogFooter>
 			<AlertDialogCancel>Continue Workout</AlertDialogCancel>
-			<form method="POST" action="?/stop" use:enhance class="contents">
+			<form
+				method="POST"
+				action="?/stop"
+				use:enhance={() => {
+					return async ({ result, update }) => {
+						if (isNetworkError(result)) {
+							await queueAction('COMPLETE_WORKOUT', {
+								sessionId: data.session.id
+							});
+							stopDialogOpen = false;
+							data.session.status = 'completed';
+						} else {
+							await update();
+						}
+					};
+				}}
+				class="contents"
+			>
 				<input type="hidden" name="sessionId" value={data.session.id} />
 				<AlertDialogAction type="submit" data-testid="confirm-stop-btn">
 					Stop Workout
@@ -313,10 +457,60 @@
 			method="POST"
 			action="?/addAdhoc"
 			use:enhance={() => {
-				return async ({ update }) => {
-					adhocDialogOpen = false;
-					adhocExerciseName = '';
-					await update();
+				return async ({ result, update }) => {
+					if (isNetworkError(result)) {
+						await queueAction('ADD_ADHOC', {
+							sessionId: data.session.id,
+							exerciseName: adhocExerciseName.trim()
+						});
+						const now = Date.now();
+						const placeholderId = -now;
+						data.session.exerciseLogs.push({
+							id: placeholderId,
+							exerciseId: null,
+							sessionId: data.session.id,
+							exerciseName: adhocExerciseName.trim(),
+							status: 'logged',
+							isAdhoc: true,
+							sortOrder: data.session.exerciseLogs.length,
+							createdAt: new Date(),
+							sets: [
+								{
+									id: -(now + 1),
+									exerciseLogId: placeholderId,
+									setNumber: 1,
+									weight: null,
+									reps: null,
+									unit: 'kg',
+									createdAt: new Date()
+								},
+								{
+									id: -(now + 2),
+									exerciseLogId: placeholderId,
+									setNumber: 2,
+									weight: null,
+									reps: null,
+									unit: 'kg',
+									createdAt: new Date()
+								},
+								{
+									id: -(now + 3),
+									exerciseLogId: placeholderId,
+									setNumber: 3,
+									weight: null,
+									reps: null,
+									unit: 'kg',
+									createdAt: new Date()
+								}
+							]
+						});
+						adhocDialogOpen = false;
+						adhocExerciseName = '';
+					} else {
+						adhocDialogOpen = false;
+						adhocExerciseName = '';
+						await update();
+					}
 				};
 			}}
 			class="space-y-4"
