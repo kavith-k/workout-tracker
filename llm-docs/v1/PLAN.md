@@ -320,7 +320,7 @@ Add Progressive Web App capabilities and offline resilience.
 - Test offline behavior: log sets offline, reconnect, verify sync
 - Add periodic sync (every 30 seconds while app is active)
 
-**Done when**: The app loads without internet, sets logged offline are queued and synced when connection returns, and the offline indicator works correctly.
+**Done**: PWA configured with `@vite-pwa/sveltekit` (generateSW, autoUpdate). Offline queue in `src/lib/offline/queue.ts` (idb library, 8 action types). Reactive stores in `src/lib/offline/stores.svelte.ts` (Svelte 5 `$state` runes). Sync engine in `src/lib/offline/sync.ts` (30s periodic + on-reconnect). API endpoint at `src/routes/api/sync/+server.ts`. OfflineIndicator wired up in `src/lib/components/shared/OfflineIndicator.svelte`. All 7 workout form enhancers in `src/routes/workout/[sessionId]/+page.svelte` fall back to offline queue on network error. Initialised in root layout `src/routes/+layout.svelte`. All 138 unit tests and 32 E2E tests pass.
 
 ---
 
