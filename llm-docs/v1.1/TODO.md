@@ -22,3 +22,11 @@ Changes needed:
 - [ ] Update `README.md` deployment instructions
 - [ ] Ensure `data/` directory is created automatically if it does not exist
 - [ ] Keep `data/` in `.gitignore`
+
+## UI Improvements
+
+- [ ] Replace hamburger menu with a better navigation pattern
+- [ ] Reduce verbose text across the app (warnings, notes, etc.)
+- [ ] History page: remove the "by exercise" view option
+- [ ] Workout page: consider removing the exercise filter pill (not useful past the first exercise or two)
+- [ ] Workout complete page: improve celebration and show workout stats
