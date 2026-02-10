@@ -4,7 +4,7 @@
 	import { untrack } from 'svelte';
 	import ProgramForm from '$lib/components/program/ProgramForm.svelte';
 
-	let { data } = $props();
+	let { data, form } = $props();
 
 	const initialData = untrack(() => ({
 		name: data.program.name,
@@ -27,6 +27,15 @@
 		</Button>
 		<h1 class="text-2xl font-bold">Edit Program</h1>
 	</div>
+
+	{#if form?.error}
+		<div
+			class="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+			data-testid="form-error"
+		>
+			{form.error}
+		</div>
+	{/if}
 
 	<ProgramForm {initialData} exerciseNames={data.exercises} submitLabel="Save Changes" />
 </div>

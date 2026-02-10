@@ -22,7 +22,12 @@
 			<p class="text-sm font-medium text-yellow-800 dark:text-yellow-200">
 				Workout in progress: {inProgressWorkout!.dayName}
 			</p>
-			<Button href="/workout/{inProgressWorkout!.id}" variant="outline" size="sm">Resume</Button>
+			<Button
+				href="/workout/{inProgressWorkout!.id}"
+				variant="outline"
+				size="sm"
+				class="min-h-[44px]">Resume</Button
+			>
 		</div>
 	</div>
 {/if}

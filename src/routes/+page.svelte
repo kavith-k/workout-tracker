@@ -1,8 +1,11 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 
 	let { data } = $props();
+
+	let startError = $state('');
 
 	function formatDaysAgo(daysAgo: number): string {
 		if (daysAgo === 0) return 'today';
@@ -22,7 +25,11 @@
 			<p class="text-sm font-medium text-yellow-800 dark:text-yellow-200">
 				A workout is already in progress. Please finish or stop it before starting a new one.
 			</p>
-			<Button href="/workout/{data.inProgressWorkout.id}" variant="outline" class="mt-2">
+			<Button
+				href="/workout/{data.inProgressWorkout.id}"
+				variant="outline"
+				class="mt-2 min-h-[44px]"
+			>
 				Resume Workout
 			</Button>
 		</div>
@@ -36,7 +43,7 @@
 			<p class="text-muted-foreground">
 				No active program. Set a program as active to start working out.
 			</p>
-			<Button href="/programs">Go to Programs</Button>
+			<Button href="/programs" class="min-h-[44px]">Go to Programs</Button>
 		</div>
 	{:else}
 		<div>
@@ -54,9 +61,31 @@
 			{/if}
 		</div>
 
+		{#if startError}
+			<div
+				class="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+				data-testid="form-error"
+			>
+				{startError}
+			</div>
+		{/if}
+
 		<div class="grid gap-3" data-testid="workout-day-buttons">
 			{#each data.activeProgram.days as day (day.id)}
-				<form method="POST" action="/workout/start">
+				<form
+					method="POST"
+					action="/workout/start"
+					use:enhance={() => {
+						startError = '';
+						return async ({ result, update }) => {
+							if (result.type === 'failure') {
+								startError = (result.data as { error?: string })?.error ?? 'Something went wrong';
+							} else {
+								await update();
+							}
+						};
+					}}
+				>
 					<input type="hidden" name="workoutDayId" value={day.id} />
 					<Button
 						type="submit"

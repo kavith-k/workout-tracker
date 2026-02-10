@@ -31,7 +31,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Ellipsis } from '@lucide/svelte';
 
-	let { data } = $props();
+	let { data, form } = $props();
 
 	let deleteDialogOpen = $state(false);
 	let deleteTargetId = $state<number | null>(null);
@@ -41,6 +41,7 @@
 	let renameDialogOpen = $state(false);
 	let renameTargetId = $state<number | null>(null);
 	let renameName = $state('');
+	let renameSubmitting = $state(false);
 
 	function openDeleteDialog(id: number, name: string, hasHistory: boolean) {
 		deleteTargetId = id;
@@ -52,6 +53,7 @@
 	function openRenameDialog(id: number, name: string) {
 		renameTargetId = id;
 		renameName = name;
+		renameSubmitting = false;
 		renameDialogOpen = true;
 	}
 
@@ -78,6 +80,15 @@
 	<div class="flex items-center justify-between">
 		<h1 class="text-2xl font-bold">Exercises</h1>
 	</div>
+
+	{#if form?.error}
+		<div
+			class="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+			data-testid="form-error"
+		>
+			{form.error}
+		</div>
+	{/if}
 
 	{#if data.exercises.length === 0}
 		<div
@@ -122,6 +133,7 @@
 								<Button
 									variant="ghost"
 									size="icon-sm"
+									class="min-h-[44px] min-w-[44px]"
 									{...props}
 									aria-label="Actions for {exercise.name}"
 								>
@@ -181,7 +193,18 @@
 			<DialogTitle>Rename Exercise</DialogTitle>
 			<DialogDescription>Enter a new name for this exercise.</DialogDescription>
 		</DialogHeader>
-		<form method="POST" action="?/rename" use:enhance class="space-y-4">
+		<form
+			method="POST"
+			action="?/rename"
+			use:enhance={() => {
+				renameSubmitting = true;
+				return async ({ update }) => {
+					renameSubmitting = false;
+					await update();
+				};
+			}}
+			class="space-y-4"
+		>
 			<input type="hidden" name="exerciseId" value={renameTargetId} />
 			<div class="space-y-2">
 				<Label for="rename-input">Exercise Name</Label>
@@ -193,7 +216,9 @@
 						<Button variant="outline" {...props}>Cancel</Button>
 					{/snippet}
 				</DialogClose>
-				<Button type="submit">Save</Button>
+				<Button type="submit" disabled={!renameName.trim() || renameSubmitting}>
+					{renameSubmitting ? 'Saving...' : 'Save'}
+				</Button>
 			</DialogFooter>
 		</form>
 	</DialogContent>

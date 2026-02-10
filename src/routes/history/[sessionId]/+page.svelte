@@ -21,12 +21,14 @@
 	} from '$lib/components/ui/dropdown-menu';
 	import { ArrowLeft, Ellipsis } from '@lucide/svelte';
 
-	let { data } = $props();
+	let { data, form } = $props();
 
 	let deleteSessionDialogOpen = $state(false);
 	let deleteExerciseDialogOpen = $state(false);
 	let deleteExerciseLogId = $state<number | null>(null);
 	let deleteExerciseName = $state('');
+	let deletingSession = $state(false);
+	let deletingExerciseLog = $state(false);
 
 	function formatDate(date: Date): string {
 		return new Date(date).toLocaleDateString('en-GB', {
@@ -47,7 +49,13 @@
 	<!-- Header -->
 	<div class="space-y-2">
 		<div class="flex items-center gap-3">
-			<Button variant="ghost" size="icon" href="/history" aria-label="Back to history">
+			<Button
+				variant="ghost"
+				size="icon"
+				class="min-h-[44px] min-w-[44px]"
+				href="/history"
+				aria-label="Back to history"
+			>
 				<ArrowLeft class="size-5" />
 			</Button>
 			<div class="flex-1">
@@ -57,6 +65,7 @@
 			<Button
 				variant="destructive"
 				size="sm"
+				class="min-h-[44px]"
 				onclick={() => (deleteSessionDialogOpen = true)}
 				data-testid="delete-session-btn"
 			>
@@ -67,6 +76,15 @@
 			{formatDate(data.session.startedAt)}
 		</p>
 	</div>
+
+	{#if form?.error}
+		<div
+			class="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+			data-testid="form-error"
+		>
+			{form.error}
+		</div>
+	{/if}
 
 	<Separator />
 
@@ -98,6 +116,7 @@
 									<Button
 										variant="ghost"
 										size="icon-sm"
+										class="min-h-[44px] min-w-[44px]"
 										{...props}
 										aria-label="Actions for {log.exerciseName}"
 									>
@@ -152,10 +171,23 @@
 			</AlertDialogDescription>
 		</AlertDialogHeader>
 		<AlertDialogFooter>
-			<AlertDialogCancel>Cancel</AlertDialogCancel>
-			<form method="POST" action="?/deleteSession" use:enhance class="contents">
+			<AlertDialogCancel class="min-h-[44px]">Cancel</AlertDialogCancel>
+			<form
+				method="POST"
+				action="?/deleteSession"
+				use:enhance={() => {
+					deletingSession = true;
+					return async ({ update }) => {
+						await update();
+						deletingSession = false;
+					};
+				}}
+				class="contents"
+			>
 				<input type="hidden" name="sessionId" value={data.session.id} />
-				<AlertDialogAction type="submit">Delete</AlertDialogAction>
+				<AlertDialogAction type="submit" class="min-h-[44px]" disabled={deletingSession}>
+					{deletingSession ? 'Deleting...' : 'Delete'}
+				</AlertDialogAction>
 			</form>
 		</AlertDialogFooter>
 	</AlertDialogContent>
@@ -172,10 +204,23 @@
 			</AlertDialogDescription>
 		</AlertDialogHeader>
 		<AlertDialogFooter>
-			<AlertDialogCancel>Cancel</AlertDialogCancel>
-			<form method="POST" action="?/deleteExerciseLog" use:enhance class="contents">
+			<AlertDialogCancel class="min-h-[44px]">Cancel</AlertDialogCancel>
+			<form
+				method="POST"
+				action="?/deleteExerciseLog"
+				use:enhance={() => {
+					deletingExerciseLog = true;
+					return async ({ update }) => {
+						await update();
+						deletingExerciseLog = false;
+					};
+				}}
+				class="contents"
+			>
 				<input type="hidden" name="exerciseLogId" value={deleteExerciseLogId} />
-				<AlertDialogAction type="submit">Delete</AlertDialogAction>
+				<AlertDialogAction type="submit" class="min-h-[44px]" disabled={deletingExerciseLog}>
+					{deletingExerciseLog ? 'Deleting...' : 'Delete'}
+				</AlertDialogAction>
 			</form>
 		</AlertDialogFooter>
 	</AlertDialogContent>
