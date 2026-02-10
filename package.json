@@ -32,6 +32,7 @@
 		"@tailwindcss/vite": "^4.1.18",
 		"@types/better-sqlite3": "^7.6.13",
 		"@types/node": "^24",
+		"@vite-pwa/sveltekit": "^1.1.0",
 		"@vitest/browser-playwright": "^4.0.18",
 		"bits-ui": "^2.15.5",
 		"clsx": "^2.1.1",
@@ -58,6 +59,7 @@
 		"vitest-browser-svelte": "^2.0.2"
 	},
 	"dependencies": {
-		"better-sqlite3": "^12.6.2"
+		"better-sqlite3": "^12.6.2",
+		"idb": "^8.0.3"
 	}
 }

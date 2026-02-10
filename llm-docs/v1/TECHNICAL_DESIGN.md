@@ -1138,5 +1138,5 @@ workout-tracker/
 8. ~~**Progressive overload**~~ - Previous/max queries and display
 9. ~~**History views**~~ - By date, by exercise, session detail, delete logs/sessions
 10. ~~**Export**~~ - JSON and CSV download
-11. **PWA/Offline** - Service worker, IndexedDB queue, sync _(next)_
-12. **Polish** - Empty states, loading states, error handling
+11. ~~**PWA/Offline**~~ - Service worker, IndexedDB queue, sync
+12. **Polish** - Empty states, loading states, error handling _(next)_

@@ -24,15 +24,25 @@
 	} from '$lib/components/ui/dialog';
 	import { Label } from '$lib/components/ui/label';
 	import { Separator } from '$lib/components/ui/separator';
+	import { addToQueue, type ActionType } from '$lib/offline/queue';
+	import { updatePendingCount } from '$lib/offline/stores.svelte';
 
 	let { data } = $props();
+
+	async function queueAction(action: ActionType, payload: Record<string, unknown>) {
+		await addToQueue(action, payload);
+		await updatePendingCount();
+	}
+
+	function isNetworkError(result: { type: string }) {
+		return result.type === 'error';
+	}
 
 	let stopDialogOpen = $state(false);
 	let adhocDialogOpen = $state(false);
 	let adhocExerciseName = $state('');
 	let selectedExerciseLogId = $state<number | null>(null);
 
-	// Navigate to a specific exercise by scrolling
 	function scrollToExercise(exerciseLogId: number) {
 		selectedExerciseLogId = exerciseLogId;
 		const el = document.getElementById(`exercise-log-${exerciseLogId}`);
@@ -111,14 +121,42 @@
 					<div class="flex gap-2">
 						{#if data.session.status === 'in_progress'}
 							{#if log.status === 'skipped'}
-								<form method="POST" action="?/unskip" use:enhance>
+								<form
+									method="POST"
+									action="?/unskip"
+									use:enhance={() => {
+										return async ({ result, update }) => {
+											if (isNetworkError(result)) {
+												await queueAction('UNSKIP_EXERCISE', {
+													exerciseLogId: log.id
+												});
+											} else {
+												await update();
+											}
+										};
+									}}
+								>
 									<input type="hidden" name="exerciseLogId" value={log.id} />
 									<Button type="submit" variant="outline" size="sm" data-testid="unskip-{log.id}">
 										Unskip
 									</Button>
 								</form>
 							{:else}
-								<form method="POST" action="?/skip" use:enhance>
+								<form
+									method="POST"
+									action="?/skip"
+									use:enhance={() => {
+										return async ({ result, update }) => {
+											if (isNetworkError(result)) {
+												await queueAction('SKIP_EXERCISE', {
+													exerciseLogId: log.id
+												});
+											} else {
+												await update();
+											}
+										};
+									}}
+								>
 									<input type="hidden" name="exerciseLogId" value={log.id} />
 									<Button type="submit" variant="ghost" size="sm" data-testid="skip-{log.id}">
 										Skip
@@ -171,10 +209,19 @@
 									id="set-form-{set.id}"
 									method="POST"
 									action="?/updateSet"
-									use:enhance={() => {
-										return async () => {
-											// Skip update() to avoid re-rendering inputs during
-											// active editing — data is saved server-side
+									use:enhance={({ formData }) => {
+										return async ({ result }) => {
+											if (isNetworkError(result)) {
+												const weight = formData.get('weight');
+												const reps = formData.get('reps');
+												await queueAction('UPDATE_SET', {
+													setLogId: Number(formData.get('setLogId')),
+													exerciseId: Number(formData.get('exerciseId')),
+													weight: weight === '' ? null : Number(weight),
+													reps: reps === '' ? null : Number(reps),
+													unit: formData.get('unit')
+												});
+											}
 										};
 									}}
 									class="contents"
@@ -226,7 +273,21 @@
 									/>
 								</form>
 								{#if data.session.status === 'in_progress' && log.sets.length > 1}
-									<form method="POST" action="?/removeSet" use:enhance>
+									<form
+										method="POST"
+										action="?/removeSet"
+										use:enhance={() => {
+											return async ({ result, update }) => {
+												if (isNetworkError(result)) {
+													await queueAction('REMOVE_SET', {
+														setLogId: set.id
+													});
+												} else {
+													await update();
+												}
+											};
+										}}
+									>
 										<input type="hidden" name="setLogId" value={set.id} />
 										<Button
 											type="submit"
@@ -246,7 +307,22 @@
 					</div>
 
 					{#if data.session.status === 'in_progress'}
-						<form method="POST" action="?/addSet" use:enhance class="mt-2">
+						<form
+							method="POST"
+							action="?/addSet"
+							use:enhance={() => {
+								return async ({ result, update }) => {
+									if (isNetworkError(result)) {
+										await queueAction('ADD_SET', {
+											exerciseLogId: log.id
+										});
+									} else {
+										await update();
+									}
+								};
+							}}
+							class="mt-2"
+						>
 							<input type="hidden" name="exerciseLogId" value={log.id} />
 							<Button
 								type="submit"
@@ -289,7 +365,23 @@
 		</AlertDialogHeader>
 		<AlertDialogFooter>
 			<AlertDialogCancel>Continue Workout</AlertDialogCancel>
-			<form method="POST" action="?/stop" use:enhance class="contents">
+			<form
+				method="POST"
+				action="?/stop"
+				use:enhance={() => {
+					return async ({ result, update }) => {
+						if (isNetworkError(result)) {
+							await queueAction('COMPLETE_WORKOUT', {
+								sessionId: data.session.id
+							});
+							stopDialogOpen = false;
+						} else {
+							await update();
+						}
+					};
+				}}
+				class="contents"
+			>
 				<input type="hidden" name="sessionId" value={data.session.id} />
 				<AlertDialogAction type="submit" data-testid="confirm-stop-btn">
 					Stop Workout
@@ -313,10 +405,19 @@
 			method="POST"
 			action="?/addAdhoc"
 			use:enhance={() => {
-				return async ({ update }) => {
-					adhocDialogOpen = false;
-					adhocExerciseName = '';
-					await update();
+				return async ({ result, update }) => {
+					if (isNetworkError(result)) {
+						await queueAction('ADD_ADHOC', {
+							sessionId: data.session.id,
+							exerciseName: adhocExerciseName.trim()
+						});
+						adhocDialogOpen = false;
+						adhocExerciseName = '';
+					} else {
+						adhocDialogOpen = false;
+						adhocExerciseName = '';
+						await update();
+					}
 				};
 			}}
 			class="space-y-4"
