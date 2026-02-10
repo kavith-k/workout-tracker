@@ -34,8 +34,9 @@ RUN npm install --omit=dev
 # Remove build tools to shrink image
 RUN apk del python3 make g++
 
-# Copy built output from build stage
+# Copy built output and migration files from build stage
 COPY --from=build /app/build ./build
+COPY --from=build /app/drizzle ./drizzle
 
 # Create data directory for SQLite volume mount
 RUN mkdir -p /data

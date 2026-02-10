@@ -1,14 +1,11 @@
 services:
   workout-tracker:
-    build:
-      context: .
+    image: ghcr.io/kavith-k/workout-tracker:latest
+    container_name: workout-tracker
     ports:
-      - '3000:3000'
+      - '6789:3000'
     environment:
-      DATABASE_PATH: /data/workout-tracker.db
+      - DATABASE_PATH=/data/workout-tracker.db
     volumes:
-      - workout-data:/data
+      - docker-config/workout-tracker:/data
     restart: unless-stopped
-
-volumes:
-  workout-data:
