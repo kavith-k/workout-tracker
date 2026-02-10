@@ -574,6 +574,30 @@ use:enhance invalidates page data → load re-runs → UI updates
 
 ---
 
+## Export Architecture
+
+### Query Module
+
+`src/lib/server/db/queries/export.ts` contains 2 functions for data export. Key exports:
+
+- `exportAsJSON(db)` — Assembles a full JSON export with programmes (including days, exercises, and progressive overload data) plus the exercise library
+- `exportAsCSV(db)` — Assembles a denormalised CSV string with one row per set from completed sessions
+
+Custom type exported: `ExportJSON`.
+
+### Server Endpoints
+
+Two GET endpoints serve downloadable files:
+
+- `/settings/export/json/+server.ts` — Returns JSON with `Content-Disposition: attachment` header
+- `/settings/export/csv/+server.ts` — Returns CSV with `Content-Disposition: attachment` header
+
+### Settings Page
+
+The settings page (`/settings/+page.svelte`) provides two download buttons linking to the export endpoints. The buttons use shadcn-svelte `Button` with `href` props, rendering as styled anchor tags for direct file download.
+
+---
+
 ## Offline / PWA Strategy
 
 ### Service Worker Setup
@@ -1113,6 +1137,6 @@ workout-tracker/
 7. ~~**Workout flow**~~ - Start, log sets, stop, summary
 8. ~~**Progressive overload**~~ - Previous/max queries and display
 9. ~~**History views**~~ - By date, by exercise, session detail, delete logs/sessions
-10. **PWA/Offline** - Service worker, IndexedDB queue, sync _(next)_
-11. **Export** - JSON and CSV download
+10. ~~**Export**~~ - JSON and CSV download
+11. **PWA/Offline** - Service worker, IndexedDB queue, sync _(next)_
 12. **Polish** - Empty states, loading states, error handling
