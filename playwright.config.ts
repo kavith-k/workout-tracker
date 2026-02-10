@@ -31,6 +31,12 @@ export default defineConfig({
 			testMatch: /history\.test\.ts/,
 			dependencies: ['workout-tests'],
 			use: { ...devices['Desktop Firefox'] }
+		},
+		{
+			name: 'export-tests',
+			testMatch: /export\.test\.ts/,
+			dependencies: ['history-tests'],
+			use: { ...devices['Desktop Firefox'] }
 		}
 	]
 });
