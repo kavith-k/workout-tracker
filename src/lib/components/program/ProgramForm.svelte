@@ -50,10 +50,15 @@
 
 	let programName = $state(untrack(() => initialData?.name ?? ''));
 	let days: Day[] = $state(untrack(() => buildInitialDays(initialData)));
+	let submitting = $state(false);
 
-	let errors = $state<{ programName?: string; days?: string; dayNames?: Record<string, string> }>(
-		{}
-	);
+	let errors = $state<{
+		programName?: string;
+		days?: string;
+		dayNames?: Record<string, string>;
+		exerciseNames?: Record<string, string>;
+		exerciseSets?: Record<string, string>;
+	}>({});
 
 	let serializedData = $derived(
 		JSON.stringify({
@@ -132,13 +137,31 @@
 		}
 
 		const dayNameErrors: Record<string, string> = {};
+		const exerciseNameErrors: Record<string, string> = {};
+		const exerciseSetsErrors: Record<string, string> = {};
+
 		for (const day of days) {
 			if (!day.name.trim()) {
 				dayNameErrors[day.tempId] = 'Day name is required';
 			}
+			for (const ex of day.exercises) {
+				if (!ex.exerciseName.trim()) {
+					exerciseNameErrors[ex.tempId] = 'Exercise name is required';
+				}
+				if (ex.setsCount < 1) {
+					exerciseSetsErrors[ex.tempId] = 'Sets must be at least 1';
+				}
+			}
 		}
+
 		if (Object.keys(dayNameErrors).length > 0) {
 			newErrors.dayNames = dayNameErrors;
+		}
+		if (Object.keys(exerciseNameErrors).length > 0) {
+			newErrors.exerciseNames = exerciseNameErrors;
+		}
+		if (Object.keys(exerciseSetsErrors).length > 0) {
+			newErrors.exerciseSets = exerciseSetsErrors;
 		}
 
 		errors = newErrors;
@@ -153,6 +176,11 @@
 			e.cancel();
 			return;
 		}
+		submitting = true;
+		return async ({ update }) => {
+			await update();
+			submitting = false;
+		};
 	}}
 	class="space-y-6"
 >
@@ -184,6 +212,7 @@
 						type="button"
 						variant="ghost"
 						size="icon-sm"
+						class="min-h-[44px] min-w-[44px]"
 						onclick={() => moveDayUp(dayIndex)}
 						disabled={dayIndex === 0}
 						aria-label="Move day up"
@@ -194,6 +223,7 @@
 						type="button"
 						variant="ghost"
 						size="icon-sm"
+						class="min-h-[44px] min-w-[44px]"
 						onclick={() => moveDayDown(dayIndex)}
 						disabled={dayIndex === days.length - 1}
 						aria-label="Move day down"
@@ -204,6 +234,7 @@
 						type="button"
 						variant="ghost"
 						size="icon-sm"
+						class="min-h-[44px] min-w-[44px]"
 						onclick={() => removeDay(day.tempId)}
 						aria-label="Remove day"
 					>
@@ -213,48 +244,65 @@
 			</div>
 
 			{#each day.exercises as exercise, exIndex (exercise.tempId)}
-				<div class="flex items-center gap-2 pl-2">
-					<div class="flex-1">
-						<Input
-							placeholder="Exercise name"
-							bind:value={exercise.exerciseName}
-							list="exercise-suggestions"
-						/>
+				<div class="space-y-1 pl-2">
+					<div class="flex items-center gap-2">
+						<div class="flex-1">
+							<Input
+								placeholder="Exercise name"
+								bind:value={exercise.exerciseName}
+								list="exercise-suggestions"
+							/>
+						</div>
+						<div class="w-20">
+							<Input
+								type="number"
+								inputmode="numeric"
+								min="1"
+								placeholder="Sets"
+								bind:value={exercise.setsCount}
+							/>
+						</div>
+						<div class="flex items-center gap-0.5">
+							<Button
+								type="button"
+								variant="ghost"
+								size="icon-sm"
+								class="min-h-[44px] min-w-[44px]"
+								onclick={() => moveExerciseUp(dayIndex, exIndex)}
+								disabled={exIndex === 0}
+								aria-label="Move exercise up"
+							>
+								<ChevronUp class="size-3.5" />
+							</Button>
+							<Button
+								type="button"
+								variant="ghost"
+								size="icon-sm"
+								class="min-h-[44px] min-w-[44px]"
+								onclick={() => moveExerciseDown(dayIndex, exIndex)}
+								disabled={exIndex === day.exercises.length - 1}
+								aria-label="Move exercise down"
+							>
+								<ChevronDown class="size-3.5" />
+							</Button>
+							<Button
+								type="button"
+								variant="ghost"
+								size="icon-sm"
+								class="min-h-[44px] min-w-[44px]"
+								onclick={() => removeExercise(dayIndex, exercise.tempId)}
+								aria-label="Remove exercise"
+							>
+								<X class="size-3.5 text-destructive" />
+							</Button>
+						</div>
 					</div>
-					<div class="w-20">
-						<Input type="number" min="1" placeholder="Sets" bind:value={exercise.setsCount} />
-					</div>
-					<div class="flex items-center gap-0.5">
-						<Button
-							type="button"
-							variant="ghost"
-							size="icon-sm"
-							onclick={() => moveExerciseUp(dayIndex, exIndex)}
-							disabled={exIndex === 0}
-							aria-label="Move exercise up"
-						>
-							<ChevronUp class="size-3.5" />
-						</Button>
-						<Button
-							type="button"
-							variant="ghost"
-							size="icon-sm"
-							onclick={() => moveExerciseDown(dayIndex, exIndex)}
-							disabled={exIndex === day.exercises.length - 1}
-							aria-label="Move exercise down"
-						>
-							<ChevronDown class="size-3.5" />
-						</Button>
-						<Button
-							type="button"
-							variant="ghost"
-							size="icon-sm"
-							onclick={() => removeExercise(dayIndex, exercise.tempId)}
-							aria-label="Remove exercise"
-						>
-							<X class="size-3.5 text-destructive" />
-						</Button>
-					</div>
+					{#if errors.exerciseNames?.[exercise.tempId]}
+						<p class="text-sm text-destructive">{errors.exerciseNames[exercise.tempId]}</p>
+					{/if}
+					{#if errors.exerciseSets?.[exercise.tempId]}
+						<p class="text-sm text-destructive">{errors.exerciseSets[exercise.tempId]}</p>
+					{/if}
 				</div>
 			{/each}
 
@@ -262,7 +310,7 @@
 				type="button"
 				variant="outline"
 				size="sm"
-				class="w-full"
+				class="min-h-[44px] w-full"
 				onclick={() => addExercise(dayIndex)}
 			>
 				<Plus class="size-4" />
@@ -271,15 +319,15 @@
 		</div>
 	{/each}
 
-	<Button type="button" variant="outline" class="w-full" onclick={addDay}>
+	<Button type="button" variant="outline" class="min-h-[44px] w-full" onclick={addDay}>
 		<Plus class="size-4" />
 		Add Day
 	</Button>
 
 	<Separator />
 
-	<Button type="submit" class="min-h-[44px] w-full">
-		{submitLabel}
+	<Button type="submit" class="min-h-[44px] w-full" disabled={submitting}>
+		{submitting ? 'Saving...' : submitLabel}
 	</Button>
 
 	<datalist id="exercise-suggestions">

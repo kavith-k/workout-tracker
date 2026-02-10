@@ -23,7 +23,13 @@
 <Sheet.Root bind:open>
 	<Sheet.Trigger>
 		{#snippet child({ props })}
-			<Button {...props} variant="ghost" size="icon" aria-label="Open menu">
+			<Button
+				{...props}
+				variant="ghost"
+				size="icon"
+				class="min-h-[44px] min-w-[44px]"
+				aria-label="Open menu"
+			>
 				<Menu class="size-6" />
 			</Button>
 		{/snippet}

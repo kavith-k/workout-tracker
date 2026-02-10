@@ -24,12 +24,12 @@
 	<div class="flex gap-1 rounded-lg bg-muted p-1" data-testid="view-toggle">
 		<a
 			href={resolve('/history')}
-			class="flex-1 rounded-md bg-muted px-3 py-1.5 text-center text-sm font-medium text-muted-foreground hover:bg-muted/80"
+			class="flex min-h-[44px] flex-1 items-center justify-center rounded-md bg-muted px-3 py-1.5 text-center text-sm font-medium text-muted-foreground hover:bg-muted/80"
 		>
 			By Date
 		</a>
 		<span
-			class="flex-1 rounded-md bg-foreground px-3 py-1.5 text-center text-sm font-medium text-background"
+			class="flex min-h-[44px] flex-1 items-center justify-center rounded-md bg-foreground px-3 py-1.5 text-center text-sm font-medium text-background"
 		>
 			By Exercise
 		</span>

@@ -59,6 +59,6 @@
 	{/if}
 
 	<div class="flex justify-center pt-4">
-		<Button href="/" data-testid="done-btn">Done</Button>
+		<Button href="/" class="min-h-[44px]" data-testid="done-btn">Done</Button>
 	</div>
 </div>

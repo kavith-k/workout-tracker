@@ -20,11 +20,12 @@
 	} from '$lib/components/ui/alert-dialog';
 	import { Ellipsis } from '@lucide/svelte';
 
-	let { data } = $props();
+	let { data, form } = $props();
 
 	let deleteDialogOpen = $state(false);
 	let deleteTargetId = $state<number | null>(null);
 	let deleteTargetDay = $state('');
+	let deletingSession = $state(false);
 
 	function openDeleteDialog(id: number, dayName: string) {
 		deleteTargetId = id;
@@ -51,11 +52,20 @@
 	</div>
 
 	<div class="flex gap-1" data-testid="view-toggle">
-		<Button variant="default" size="sm" class="rounded-full">By Date</Button>
-		<Button variant="ghost" size="sm" class="rounded-full" href="/history/by-exercise">
+		<Button variant="default" size="sm" class="min-h-[44px] rounded-full">By Date</Button>
+		<Button variant="ghost" size="sm" class="min-h-[44px] rounded-full" href="/history/by-exercise">
 			By Exercise
 		</Button>
 	</div>
+
+	{#if form?.error}
+		<div
+			class="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+			data-testid="form-error"
+		>
+			{form.error}
+		</div>
+	{/if}
 
 	{#if data.sessions.length === 0}
 		<div
@@ -93,7 +103,13 @@
 					<DropdownMenu>
 						<DropdownMenuTrigger>
 							{#snippet child({ props })}
-								<Button variant="ghost" size="icon-sm" {...props} aria-label="Actions for session">
+								<Button
+									variant="ghost"
+									size="icon-sm"
+									class="min-h-[44px] min-w-[44px]"
+									{...props}
+									aria-label="Actions for session"
+								>
 									<Ellipsis class="size-4" />
 								</Button>
 							{/snippet}
@@ -124,10 +140,23 @@
 			</AlertDialogDescription>
 		</AlertDialogHeader>
 		<AlertDialogFooter>
-			<AlertDialogCancel>Cancel</AlertDialogCancel>
-			<form method="POST" action="?/deleteSession" use:enhance class="contents">
+			<AlertDialogCancel class="min-h-[44px]">Cancel</AlertDialogCancel>
+			<form
+				method="POST"
+				action="?/deleteSession"
+				use:enhance={() => {
+					deletingSession = true;
+					return async ({ update }) => {
+						await update();
+						deletingSession = false;
+					};
+				}}
+				class="contents"
+			>
 				<input type="hidden" name="sessionId" value={deleteTargetId} />
-				<AlertDialogAction type="submit">Delete</AlertDialogAction>
+				<AlertDialogAction type="submit" class="min-h-[44px]" disabled={deletingSession}>
+					{deletingSession ? 'Deleting...' : 'Delete'}
+				</AlertDialogAction>
 			</form>
 		</AlertDialogFooter>
 	</AlertDialogContent>

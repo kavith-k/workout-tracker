@@ -33,7 +33,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Ellipsis, Plus } from '@lucide/svelte';
 
-	let { data } = $props();
+	let { data, form } = $props();
 
 	let deleteDialogOpen = $state(false);
 	let deleteTargetId = $state<number | null>(null);
@@ -42,6 +42,7 @@
 	let duplicateDialogOpen = $state(false);
 	let duplicateTargetId = $state<number | null>(null);
 	let duplicateName = $state('');
+	let duplicateSubmitting = $state(false);
 
 	function openDeleteDialog(id: number, name: string) {
 		deleteTargetId = id;
@@ -52,6 +53,7 @@
 	function openDuplicateDialog(id: number, name: string) {
 		duplicateTargetId = id;
 		duplicateName = `${name} (Copy)`;
+		duplicateSubmitting = false;
 		duplicateDialogOpen = true;
 	}
 </script>
@@ -60,6 +62,15 @@
 	<div class="flex items-center justify-between">
 		<h1 class="text-2xl font-bold">Programs</h1>
 	</div>
+
+	{#if form?.error}
+		<div
+			class="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+			data-testid="form-error"
+		>
+			{form.error}
+		</div>
+	{/if}
 
 	{#if data.programs.length === 0}
 		<div class="flex flex-col items-center justify-center gap-4 py-12 text-center">
@@ -86,7 +97,13 @@
 					<DropdownMenu>
 						<DropdownMenuTrigger>
 							{#snippet child({ props })}
-								<Button variant="ghost" size="icon-sm" {...props} aria-label="Actions">
+								<Button
+									variant="ghost"
+									size="icon-sm"
+									class="min-h-[44px] min-w-[44px]"
+									{...props}
+									aria-label="Actions"
+								>
 									<Ellipsis class="size-4" />
 								</Button>
 							{/snippet}
@@ -157,7 +174,18 @@
 			<DialogTitle>Duplicate Program</DialogTitle>
 			<DialogDescription>Enter a name for the duplicate program.</DialogDescription>
 		</DialogHeader>
-		<form method="POST" action="?/duplicate" use:enhance class="space-y-4">
+		<form
+			method="POST"
+			action="?/duplicate"
+			use:enhance={() => {
+				duplicateSubmitting = true;
+				return async ({ update }) => {
+					duplicateSubmitting = false;
+					await update();
+				};
+			}}
+			class="space-y-4"
+		>
 			<input type="hidden" name="programId" value={duplicateTargetId} />
 			<div class="space-y-2">
 				<Label for="duplicate-name">Program Name</Label>
@@ -169,7 +197,9 @@
 						<Button variant="outline" {...props}>Cancel</Button>
 					{/snippet}
 				</DialogClose>
-				<Button type="submit">Duplicate</Button>
+				<Button type="submit" disabled={!duplicateName.trim() || duplicateSubmitting}>
+					{duplicateSubmitting ? 'Saving...' : 'Duplicate'}
+				</Button>
 			</DialogFooter>
 		</form>
 	</DialogContent>

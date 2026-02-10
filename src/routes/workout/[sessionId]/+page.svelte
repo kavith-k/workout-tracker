@@ -42,8 +42,11 @@
 	}
 
 	let stopDialogOpen = $state(false);
+	let stoppingWorkout = $state(false);
 	let adhocDialogOpen = $state(false);
 	let adhocExerciseName = $state('');
+	let adhocError = $state('');
+	let adhocSubmitting = $state(false);
 	let selectedExerciseLogId = $state<number | null>(null);
 
 	function scrollToExercise(exerciseLogId: number) {
@@ -75,6 +78,7 @@
 			<Button
 				variant="destructive"
 				size="sm"
+				class="min-h-[44px]"
 				onclick={() => (stopDialogOpen = true)}
 				data-testid="stop-workout-btn"
 			>
@@ -97,7 +101,7 @@
 		<div class="flex gap-2 overflow-x-auto pb-2" data-testid="exercise-navigator">
 			{#each data.session.exerciseLogs as log (log.id)}
 				<button
-					class="shrink-0 rounded-full border px-3 py-1 text-sm transition-colors
+					class="min-h-[44px] shrink-0 rounded-full border px-3 py-1 text-sm transition-colors
 						{selectedExerciseLogId === log.id
 						? 'border-foreground bg-foreground text-background'
 						: 'border-border hover:bg-muted'}
@@ -151,7 +155,13 @@
 									}}
 								>
 									<input type="hidden" name="exerciseLogId" value={log.id} />
-									<Button type="submit" variant="outline" size="sm" data-testid="unskip-{log.id}">
+									<Button
+										type="submit"
+										variant="outline"
+										size="sm"
+										class="min-h-[44px]"
+										data-testid="unskip-{log.id}"
+									>
 										Unskip
 									</Button>
 								</form>
@@ -174,7 +184,13 @@
 									}}
 								>
 									<input type="hidden" name="exerciseLogId" value={log.id} />
-									<Button type="submit" variant="ghost" size="sm" data-testid="skip-{log.id}">
+									<Button
+										type="submit"
+										variant="ghost"
+										size="sm"
+										class="min-h-[44px]"
+										data-testid="skip-{log.id}"
+									>
 										Skip
 									</Button>
 								</form>
@@ -274,7 +290,7 @@
 										/>
 										<button
 											type="button"
-											class="absolute top-1/2 right-2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground"
+											class="absolute top-1/2 right-0 flex min-h-[44px] min-w-[44px] -translate-y-1/2 items-center justify-center text-xs text-muted-foreground hover:text-foreground"
 											onclick={(e) => {
 												const form = e.currentTarget.closest('form');
 												if (!form) return;
@@ -331,7 +347,7 @@
 											type="submit"
 											variant="ghost"
 											size="icon-sm"
-											class="text-muted-foreground"
+											class="min-h-[44px] min-w-[44px] text-muted-foreground"
 											data-testid="remove-set-{set.id}"
 										>
 											&times;
@@ -379,7 +395,7 @@
 								type="submit"
 								variant="ghost"
 								size="sm"
-								class="text-muted-foreground"
+								class="min-h-[44px] text-muted-foreground"
 								data-testid="add-set-{log.id}"
 							>
 								+ Add Set
@@ -395,6 +411,7 @@
 		<div class="flex justify-center pb-4">
 			<Button
 				variant="outline"
+				class="min-h-[44px]"
 				onclick={() => (adhocDialogOpen = true)}
 				data-testid="add-adhoc-btn"
 			>
@@ -415,11 +432,12 @@
 			</AlertDialogDescription>
 		</AlertDialogHeader>
 		<AlertDialogFooter>
-			<AlertDialogCancel>Continue Workout</AlertDialogCancel>
+			<AlertDialogCancel class="min-h-[44px]">Continue Workout</AlertDialogCancel>
 			<form
 				method="POST"
 				action="?/stop"
 				use:enhance={() => {
+					stoppingWorkout = true;
 					return async ({ result, update }) => {
 						if (isNetworkError(result)) {
 							await queueAction('COMPLETE_WORKOUT', {
@@ -430,13 +448,19 @@
 						} else {
 							await update();
 						}
+						stoppingWorkout = false;
 					};
 				}}
 				class="contents"
 			>
 				<input type="hidden" name="sessionId" value={data.session.id} />
-				<AlertDialogAction type="submit" data-testid="confirm-stop-btn">
-					Stop Workout
+				<AlertDialogAction
+					type="submit"
+					class="min-h-[44px]"
+					disabled={stoppingWorkout}
+					data-testid="confirm-stop-btn"
+				>
+					{stoppingWorkout ? 'Stopping...' : 'Stop Workout'}
 				</AlertDialogAction>
 			</form>
 		</AlertDialogFooter>
@@ -457,6 +481,8 @@
 			method="POST"
 			action="?/addAdhoc"
 			use:enhance={() => {
+				adhocError = '';
+				adhocSubmitting = true;
 				return async ({ result, update }) => {
 					if (isNetworkError(result)) {
 						await queueAction('ADD_ADHOC', {
@@ -506,11 +532,14 @@
 						});
 						adhocDialogOpen = false;
 						adhocExerciseName = '';
+					} else if (result.type === 'failure') {
+						adhocError = (result.data as { error?: string })?.error ?? 'Something went wrong';
 					} else {
 						adhocDialogOpen = false;
 						adhocExerciseName = '';
 						await update();
 					}
+					adhocSubmitting = false;
 				};
 			}}
 			class="space-y-4"
@@ -525,6 +554,9 @@
 					placeholder="e.g., Lateral Raise"
 					data-testid="adhoc-exercise-input"
 				/>
+				{#if adhocError}
+					<p class="text-sm text-destructive" data-testid="adhoc-error">{adhocError}</p>
+				{/if}
 			</div>
 			<DialogFooter>
 				<DialogClose>
@@ -532,8 +564,12 @@
 						<Button variant="outline" {...props}>Cancel</Button>
 					{/snippet}
 				</DialogClose>
-				<Button type="submit" disabled={!adhocExerciseName.trim()} data-testid="adhoc-submit-btn">
-					Add
+				<Button
+					type="submit"
+					disabled={!adhocExerciseName.trim() || adhocSubmitting}
+					data-testid="adhoc-submit-btn"
+				>
+					{adhocSubmitting ? 'Adding...' : 'Add'}
 				</Button>
 			</DialogFooter>
 		</form>
