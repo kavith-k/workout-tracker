@@ -23,7 +23,6 @@
 		DialogTitle
 	} from '$lib/components/ui/dialog';
 	import { Label } from '$lib/components/ui/label';
-	import { Separator } from '$lib/components/ui/separator';
 	import { addToQueue, type ActionType } from '$lib/offline/queue';
 	import { offlineState, updatePendingCount } from '$lib/offline/stores.svelte';
 
@@ -78,7 +77,7 @@
 			<Button
 				variant="destructive"
 				size="sm"
-				class="min-h-[44px]"
+				class="min-h-[44px] rounded-xl"
 				onclick={() => (stopDialogOpen = true)}
 				data-testid="stop-workout-btn"
 			>
@@ -89,7 +88,7 @@
 
 	{#if data.session.status === 'completed'}
 		<div
-			class="rounded-lg border border-border bg-muted/50 p-4 text-center text-sm text-muted-foreground"
+			class="rounded-2xl bg-card p-4 text-center text-sm text-muted-foreground shadow-xs"
 			data-testid="offline-completed-banner"
 		>
 			Workout stopped (pending sync)
@@ -101,10 +100,10 @@
 		<div class="flex gap-2 overflow-x-auto pb-2" data-testid="exercise-navigator">
 			{#each data.session.exerciseLogs as log (log.id)}
 				<button
-					class="min-h-[44px] shrink-0 rounded-full border px-3 py-1 text-sm transition-colors
+					class="min-h-[36px] shrink-0 rounded-full px-4 py-1 text-sm font-medium transition-colors
 						{selectedExerciseLogId === log.id
-						? 'border-foreground bg-foreground text-background'
-						: 'border-border hover:bg-muted'}
+						? 'bg-foreground text-background'
+						: 'bg-card text-foreground shadow-xs'}
 						{log.status === 'skipped' ? 'line-through opacity-50' : ''}"
 					onclick={() => scrollToExercise(log.id)}
 					data-testid="exercise-nav-{log.id}"
@@ -115,14 +114,14 @@
 		</div>
 	{/if}
 
-	<Separator />
-
 	<!-- Exercise cards -->
 	<div class="space-y-6">
 		{#each data.session.exerciseLogs as log (log.id)}
 			<div
 				id="exercise-log-{log.id}"
-				class="rounded-lg border border-border p-4 {log.status === 'skipped' ? 'opacity-60' : ''}"
+				class="overflow-hidden rounded-2xl bg-card p-4 shadow-xs {log.status === 'skipped'
+					? 'opacity-60'
+					: ''}"
 				data-testid="exercise-card-{log.id}"
 			>
 				<div class="flex items-start justify-between">
@@ -411,7 +410,7 @@
 		<div class="flex justify-center pb-4">
 			<Button
 				variant="outline"
-				class="min-h-[44px]"
+				class="min-h-[44px] rounded-xl"
 				onclick={() => (adhocDialogOpen = true)}
 				data-testid="add-adhoc-btn"
 			>

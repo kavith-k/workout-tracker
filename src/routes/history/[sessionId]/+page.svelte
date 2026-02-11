@@ -2,7 +2,6 @@
 	import { enhance } from '$app/forms';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Separator } from '$lib/components/ui/separator';
 	import {
 		AlertDialog,
 		AlertDialogAction,
@@ -19,7 +18,7 @@
 		DropdownMenuItem,
 		DropdownMenuTrigger
 	} from '$lib/components/ui/dropdown-menu';
-	import { ArrowLeft, Ellipsis } from '@lucide/svelte';
+	import { ChevronLeft, Ellipsis } from '@lucide/svelte';
 
 	let { data, form } = $props();
 
@@ -45,7 +44,7 @@
 	}
 </script>
 
-<div class="space-y-4" data-testid="session-detail">
+<div class="space-y-6" data-testid="session-detail">
 	<!-- Header -->
 	<div class="space-y-2">
 		<div class="flex items-center gap-3">
@@ -56,51 +55,50 @@
 				href="/history"
 				aria-label="Back to history"
 			>
-				<ArrowLeft class="size-5" />
+				<ChevronLeft class="size-5" />
 			</Button>
-			<div class="flex-1">
+			<div class="min-w-0 flex-1">
 				<h1 class="text-xl font-bold">{data.session.dayName}</h1>
-				<p class="text-sm text-muted-foreground">{data.session.programName}</p>
+				<p class="text-sm text-muted-foreground">
+					{data.session.programName} &middot; {formatDate(data.session.startedAt)}
+				</p>
 			</div>
 			<Button
-				variant="destructive"
+				variant="ghost"
 				size="sm"
-				class="min-h-[44px]"
+				class="min-h-[44px] text-destructive hover:text-destructive"
 				onclick={() => (deleteSessionDialogOpen = true)}
 				data-testid="delete-session-btn"
 			>
-				Delete Session
+				Delete
 			</Button>
 		</div>
-		<p class="pl-12 text-sm text-muted-foreground" data-testid="session-detail-date">
-			{formatDate(data.session.startedAt)}
-		</p>
 	</div>
 
 	{#if form?.error}
 		<div
-			class="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+			class="rounded-2xl bg-destructive/10 p-3 text-sm text-destructive"
 			data-testid="form-error"
 		>
 			{form.error}
 		</div>
 	{/if}
 
-	<Separator />
-
 	<!-- Exercise logs -->
 	{#if data.session.exerciseLogs.length === 0}
-		<div class="flex flex-col items-center justify-center gap-4 py-12 text-center">
+		<div class="flex flex-col items-center justify-center gap-3 py-16 text-center">
 			<p class="text-muted-foreground">No exercises recorded in this session.</p>
 		</div>
 	{:else}
 		<div class="space-y-4">
 			{#each data.session.exerciseLogs as log (log.id)}
 				<div
-					class="rounded-lg border border-border p-4 {log.status === 'skipped' ? 'opacity-60' : ''}"
+					class="overflow-hidden rounded-2xl bg-card shadow-xs {log.status === 'skipped'
+						? 'opacity-60'
+						: ''}"
 					data-testid="exercise-log-card"
 				>
-					<div class="flex items-start justify-between">
+					<div class="flex min-h-[44px] items-start justify-between px-4 py-3">
 						<div class="flex items-center gap-2">
 							<h3 class="font-semibold" data-testid="exercise-log-name">
 								{log.exerciseName}
@@ -137,7 +135,7 @@
 					</div>
 
 					{#if log.status !== 'skipped' && log.sets.length > 0}
-						<div class="mt-3">
+						<div class="border-t border-border/40 px-4 py-3">
 							<div class="grid grid-cols-4 gap-2 text-xs font-medium text-muted-foreground">
 								<span>Set</span>
 								<span>Weight</span>
@@ -162,7 +160,7 @@
 
 <!-- Delete Session Confirmation -->
 <AlertDialog bind:open={deleteSessionDialogOpen}>
-	<AlertDialogContent>
+	<AlertDialogContent class="rounded-2xl">
 		<AlertDialogHeader>
 			<AlertDialogTitle>Delete Session</AlertDialogTitle>
 			<AlertDialogDescription>
@@ -171,7 +169,7 @@
 			</AlertDialogDescription>
 		</AlertDialogHeader>
 		<AlertDialogFooter>
-			<AlertDialogCancel class="min-h-[44px]">Cancel</AlertDialogCancel>
+			<AlertDialogCancel class="min-h-[44px] rounded-xl">Cancel</AlertDialogCancel>
 			<form
 				method="POST"
 				action="?/deleteSession"
@@ -185,7 +183,7 @@
 				class="contents"
 			>
 				<input type="hidden" name="sessionId" value={data.session.id} />
-				<AlertDialogAction type="submit" class="min-h-[44px]" disabled={deletingSession}>
+				<AlertDialogAction type="submit" class="min-h-[44px] rounded-xl" disabled={deletingSession}>
 					{deletingSession ? 'Deleting...' : 'Delete'}
 				</AlertDialogAction>
 			</form>
@@ -195,7 +193,7 @@
 
 <!-- Delete Exercise Log Confirmation -->
 <AlertDialog bind:open={deleteExerciseDialogOpen}>
-	<AlertDialogContent>
+	<AlertDialogContent class="rounded-2xl">
 		<AlertDialogHeader>
 			<AlertDialogTitle>Delete Exercise</AlertDialogTitle>
 			<AlertDialogDescription>
@@ -204,7 +202,7 @@
 			</AlertDialogDescription>
 		</AlertDialogHeader>
 		<AlertDialogFooter>
-			<AlertDialogCancel class="min-h-[44px]">Cancel</AlertDialogCancel>
+			<AlertDialogCancel class="min-h-[44px] rounded-xl">Cancel</AlertDialogCancel>
 			<form
 				method="POST"
 				action="?/deleteExerciseLog"
@@ -218,7 +216,11 @@
 				class="contents"
 			>
 				<input type="hidden" name="exerciseLogId" value={deleteExerciseLogId} />
-				<AlertDialogAction type="submit" class="min-h-[44px]" disabled={deletingExerciseLog}>
+				<AlertDialogAction
+					type="submit"
+					class="min-h-[44px] rounded-xl"
+					disabled={deletingExerciseLog}
+				>
 					{deletingExerciseLog ? 'Deleting...' : 'Delete'}
 				</AlertDialogAction>
 			</form>

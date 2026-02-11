@@ -76,14 +76,12 @@
 	}
 </script>
 
-<div class="space-y-4">
-	<div class="flex items-center justify-between">
-		<h1 class="text-2xl font-bold">Exercises</h1>
-	</div>
+<div class="space-y-6">
+	<h1 class="text-3xl font-bold tracking-tight">Exercises</h1>
 
 	{#if form?.error}
 		<div
-			class="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+			class="rounded-2xl bg-destructive/10 p-3 text-sm text-destructive"
 			data-testid="form-error"
 		>
 			{form.error}
@@ -92,20 +90,20 @@
 
 	{#if data.exercises.length === 0}
 		<div
-			class="flex flex-col items-center justify-center gap-4 py-12 text-center"
+			class="flex flex-col items-center justify-center gap-3 py-16 text-center"
 			data-testid="empty-state"
 		>
 			<p class="text-muted-foreground">
 				No exercises yet. Exercises are added automatically when you create programs.
 			</p>
-			<Button href="/programs">Go to Programs</Button>
+			<Button href="/programs" class="rounded-xl">Go to Programs</Button>
 		</div>
 	{:else}
-		<div class="space-y-3">
+		<div class="overflow-hidden rounded-2xl bg-card shadow-xs">
 			{#each data.exercises as exercise (exercise.id)}
 				<div
 					data-testid="exercise-item"
-					class="flex items-start justify-between rounded-lg border border-border p-4"
+					class="flex min-h-[44px] items-start border-b border-border/40 px-4 py-3 last:border-b-0"
 				>
 					<div class="min-w-0 flex-1">
 						<p class="font-medium" data-testid="exercise-name">{exercise.name}</p>

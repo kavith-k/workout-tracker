@@ -58,14 +58,12 @@
 	}
 </script>
 
-<div class="space-y-4">
-	<div class="flex items-center justify-between">
-		<h1 class="text-2xl font-bold">Programs</h1>
-	</div>
+<div class="space-y-6">
+	<h1 class="text-3xl font-bold tracking-tight">Programs</h1>
 
 	{#if form?.error}
 		<div
-			class="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+			class="rounded-2xl bg-destructive/10 p-3 text-sm text-destructive"
 			data-testid="form-error"
 		>
 			{form.error}
@@ -73,21 +71,21 @@
 	{/if}
 
 	{#if data.programs.length === 0}
-		<div class="flex flex-col items-center justify-center gap-4 py-12 text-center">
+		<div class="flex flex-col items-center justify-center gap-3 py-16 text-center">
 			<p class="text-muted-foreground">No programs yet. Create your first workout program.</p>
-			<Button href="/programs/new">
+			<Button href="/programs/new" class="rounded-xl">
 				<Plus class="size-4" />
 				Create Program
 			</Button>
 		</div>
 	{:else}
-		<div class="space-y-3">
+		<div class="overflow-hidden rounded-2xl bg-card shadow-xs">
 			{#each data.programs as program (program.id)}
 				<div
 					data-testid="program-card"
-					class="flex items-center justify-between rounded-lg border border-border p-4"
+					class="flex min-h-[44px] items-center border-b border-border/40 px-4 py-3 last:border-b-0"
 				>
-					<div class="flex items-center gap-3">
+					<div class="flex min-w-0 flex-1 items-center gap-3">
 						<span class="font-medium">{program.name}</span>
 						{#if program.isActive}
 							<Badge variant="secondary">Active</Badge>
@@ -141,7 +139,7 @@
 			{/each}
 		</div>
 
-		<Button href="/programs/new" class="min-h-[44px] w-full">
+		<Button href="/programs/new" class="min-h-[44px] w-full rounded-xl">
 			<Plus class="size-4" />
 			Create Program
 		</Button>

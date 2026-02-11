@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { Button } from '$lib/components/ui/button';
+	import { resolve } from '$app/paths';
 	import { validateProgramUpload } from '$lib/schemas/program-upload';
 
 	let { form } = $props();
@@ -46,39 +46,41 @@
 </script>
 
 <div class="space-y-6">
-	<h1 class="text-2xl font-bold">Settings</h1>
+	<h1 class="text-3xl font-bold tracking-tight">Settings</h1>
 
-	<section class="space-y-3">
-		<h2 class="text-lg font-semibold">Export Data</h2>
-		<div class="flex flex-col gap-2 sm:flex-row">
-			<Button
-				href="/settings/export/json"
-				variant="outline"
-				class="min-h-[44px]"
+	<section class="space-y-2">
+		<h2 class="px-1 pb-1.5 text-sm font-medium tracking-wide text-muted-foreground uppercase">
+			Export Data
+		</h2>
+		<div class="overflow-hidden rounded-2xl bg-card shadow-xs">
+			<a
+				href={resolve('/settings/export/json')}
+				class="flex min-h-[44px] items-center border-b border-border/40 px-4 py-3 last:border-b-0 active:bg-muted/60"
 				data-testid="export-json-btn"
 			>
-				Export as JSON
-			</Button>
-			<Button
-				href="/settings/export/csv"
-				variant="outline"
-				class="min-h-[44px]"
+				<span class="min-w-0 flex-1">Export as JSON</span>
+			</a>
+			<a
+				href={resolve('/settings/export/csv')}
+				class="flex min-h-[44px] items-center border-b border-border/40 px-4 py-3 last:border-b-0 active:bg-muted/60"
 				data-testid="export-csv-btn"
 			>
-				Export as CSV
-			</Button>
+				<span class="min-w-0 flex-1">Export as CSV</span>
+			</a>
 		</div>
 	</section>
 
-	<section class="space-y-3">
-		<div>
-			<h2 class="text-lg font-semibold">Import Program</h2>
+	<section class="space-y-2">
+		<div class="px-1">
+			<h2 class="pb-1.5 text-sm font-medium tracking-wide text-muted-foreground uppercase">
+				Import Program
+			</h2>
 			<p class="text-sm text-muted-foreground">Upload a JSON file to create a new program.</p>
 		</div>
 
 		{#if uploadError || form?.error}
 			<div
-				class="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+				class="rounded-2xl bg-destructive/10 p-3 text-sm text-destructive"
 				data-testid="upload-error"
 			>
 				{uploadError || form?.error}
@@ -97,13 +99,14 @@
 			<input bind:this={hiddenDataInput} type="hidden" name="data" />
 		</form>
 
-		<Button
-			variant="outline"
-			class="min-h-[44px]"
-			data-testid="upload-program-btn"
-			onclick={() => fileInput?.click()}
-		>
-			Upload Program File
-		</Button>
+		<div class="overflow-hidden rounded-2xl bg-card shadow-xs">
+			<button
+				class="flex min-h-[44px] w-full items-center px-4 py-3 text-left active:bg-muted/60"
+				data-testid="upload-program-btn"
+				onclick={() => fileInput?.click()}
+			>
+				Upload Program File
+			</button>
+		</div>
 	</section>
 </div>

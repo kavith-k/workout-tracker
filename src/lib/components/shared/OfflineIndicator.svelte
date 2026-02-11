@@ -3,7 +3,10 @@
 </script>
 
 {#if !offlineState.isOnline || offlineState.pendingSyncCount > 0}
-	<div class="fixed right-4 bottom-4 z-50 rounded-full bg-gray-800 px-3 py-1 text-sm text-white">
+	<div
+		class="fixed right-4 z-50 rounded-full bg-foreground/90 px-3 py-1.5 text-sm font-medium text-background shadow-lg backdrop-blur-sm"
+		style="bottom: calc(5rem + env(safe-area-inset-bottom, 0px));"
+	>
 		{#if !offlineState.isOnline}
 			Offline
 		{:else if offlineState.pendingSyncCount > 0}

@@ -18,7 +18,7 @@
 		AlertDialogHeader,
 		AlertDialogTitle
 	} from '$lib/components/ui/alert-dialog';
-	import { Ellipsis } from '@lucide/svelte';
+	import { ChevronRight, Ellipsis } from '@lucide/svelte';
 
 	let { data, form } = $props();
 
@@ -46,21 +46,26 @@
 	}
 </script>
 
-<div class="space-y-4">
-	<div class="flex items-center justify-between">
-		<h1 class="text-2xl font-bold">History</h1>
-	</div>
+<div class="space-y-6">
+	<h1 class="text-3xl font-bold tracking-tight">History</h1>
 
-	<div class="flex gap-1" data-testid="view-toggle">
-		<Button variant="default" size="sm" class="min-h-[44px] rounded-full">By Date</Button>
-		<Button variant="ghost" size="sm" class="min-h-[44px] rounded-full" href="/history/by-exercise">
+	<div class="flex rounded-xl bg-muted p-1" data-testid="view-toggle">
+		<span
+			class="flex min-h-[36px] flex-1 items-center justify-center rounded-lg bg-card px-3 text-sm font-medium text-foreground shadow-sm"
+		>
+			By Date
+		</span>
+		<a
+			href={resolve('/history/by-exercise')}
+			class="flex min-h-[36px] flex-1 items-center justify-center rounded-lg px-3 text-sm font-medium text-muted-foreground"
+		>
 			By Exercise
-		</Button>
+		</a>
 	</div>
 
 	{#if form?.error}
 		<div
-			class="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+			class="rounded-2xl bg-destructive/10 p-3 text-sm text-destructive"
 			data-testid="form-error"
 		>
 			{form.error}
@@ -69,7 +74,7 @@
 
 	{#if data.sessions.length === 0}
 		<div
-			class="flex flex-col items-center justify-center gap-4 py-12 text-center"
+			class="flex flex-col items-center justify-center gap-3 py-16 text-center"
 			data-testid="empty-state"
 		>
 			<p class="text-muted-foreground">
@@ -77,27 +82,32 @@
 			</p>
 		</div>
 	{:else}
-		<div class="space-y-3">
+		<div class="overflow-hidden rounded-2xl bg-card shadow-xs">
 			{#each data.sessions as session (session.id)}
 				<div
 					data-testid="session-card"
-					class="flex items-start justify-between rounded-lg border border-border p-4"
+					class="flex min-h-[44px] items-center border-b border-border/40 last:border-b-0"
 				>
 					<a
 						href={resolve('/history/[sessionId]', { sessionId: String(session.id) })}
-						class="min-w-0 flex-1"
+						class="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 active:bg-muted/60"
 					>
-						<p class="font-bold" data-testid="session-date">
-							{getDayOfWeek(session.completedAt ?? session.startedAt)}
-						</p>
-						<p class="text-sm text-muted-foreground">
-							{session.programName} &middot; {formatDate(session.completedAt ?? session.startedAt)}
-						</p>
-						<p class="mt-1 text-sm text-muted-foreground" data-testid="session-exercises">
-							{session.completedCount}/{session.exerciseCount} exercises{#if session.skippedCount > 0}
-								&middot; {session.skippedCount} skipped
-							{/if}
-						</p>
+						<div class="min-w-0 flex-1">
+							<p class="font-bold" data-testid="session-date">
+								{getDayOfWeek(session.completedAt ?? session.startedAt)}
+							</p>
+							<p class="text-sm text-muted-foreground">
+								{session.programName} &middot; {formatDate(
+									session.completedAt ?? session.startedAt
+								)}
+							</p>
+							<p class="mt-1 text-sm text-muted-foreground" data-testid="session-exercises">
+								{session.completedCount}/{session.exerciseCount} exercises{#if session.skippedCount > 0}
+									&middot; {session.skippedCount} skipped
+								{/if}
+							</p>
+						</div>
+						<ChevronRight class="size-5 shrink-0 text-muted-foreground/40" />
 					</a>
 
 					<DropdownMenu>
@@ -106,7 +116,7 @@
 								<Button
 									variant="ghost"
 									size="icon-sm"
-									class="min-h-[44px] min-w-[44px]"
+									class="mr-1 min-h-[44px] min-w-[44px]"
 									{...props}
 									aria-label="Actions for session"
 								>
@@ -131,7 +141,7 @@
 
 <!-- Delete Confirmation Dialog -->
 <AlertDialog bind:open={deleteDialogOpen}>
-	<AlertDialogContent>
+	<AlertDialogContent class="rounded-2xl">
 		<AlertDialogHeader>
 			<AlertDialogTitle>Delete Workout</AlertDialogTitle>
 			<AlertDialogDescription>
@@ -140,7 +150,7 @@
 			</AlertDialogDescription>
 		</AlertDialogHeader>
 		<AlertDialogFooter>
-			<AlertDialogCancel class="min-h-[44px]">Cancel</AlertDialogCancel>
+			<AlertDialogCancel class="min-h-[44px] rounded-xl">Cancel</AlertDialogCancel>
 			<form
 				method="POST"
 				action="?/deleteSession"
@@ -154,7 +164,7 @@
 				class="contents"
 			>
 				<input type="hidden" name="sessionId" value={deleteTargetId} />
-				<AlertDialogAction type="submit" class="min-h-[44px]" disabled={deletingSession}>
+				<AlertDialogAction type="submit" class="min-h-[44px] rounded-xl" disabled={deletingSession}>
 					{deletingSession ? 'Deleting...' : 'Delete'}
 				</AlertDialogAction>
 			</form>
