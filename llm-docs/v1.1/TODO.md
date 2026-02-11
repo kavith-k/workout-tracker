@@ -23,6 +23,15 @@ Changes needed:
 - [ ] Ensure `data/` directory is created automatically if it does not exist
 - [ ] Keep `data/` in `.gitignore`
 
+## Improve Documentation
+
+Add deployment/self-hosting documentation covering:
+
+- [ ] Required and optional environment variables
+- [ ] Docker and docker-compose setup instructions
+- [ ] Reverse proxy configuration notes (e.g. Nginx, Traefik)
+- [ ] Known limitations for plain HTTP deployments (non-HTTPS)
+
 ## UI Improvements
 
 - [ ] Replace hamburger menu with a better navigation pattern

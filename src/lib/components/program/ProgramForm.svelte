@@ -6,6 +6,7 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import { Plus, Trash2, ChevronUp, ChevronDown, X } from '@lucide/svelte';
 	import { untrack } from 'svelte';
+	import { generateId } from '$lib/utils';
 
 	type DayExercise = {
 		tempId: string;
@@ -30,10 +31,10 @@
 	function buildInitialDays(data?: InitialData): Day[] {
 		if (!data?.days) return [];
 		return data.days.map((d) => ({
-			tempId: crypto.randomUUID(),
+			tempId: generateId(),
 			name: d.name,
 			exercises: d.exercises.map((ex) => ({
-				tempId: crypto.randomUUID(),
+				tempId: generateId(),
 				exerciseName: ex.exerciseName,
 				setsCount: ex.setsCount
 			}))
@@ -75,7 +76,7 @@
 
 	function addDay() {
 		days.push({
-			tempId: crypto.randomUUID(),
+			tempId: generateId(),
 			name: '',
 			exercises: []
 		});
@@ -100,7 +101,7 @@
 
 	function addExercise(dayIndex: number) {
 		days[dayIndex].exercises.push({
-			tempId: crypto.randomUUID(),
+			tempId: generateId(),
 			exerciseName: '',
 			setsCount: 3
 		});

@@ -14,3 +14,7 @@ bun.lockb
 
 # Claude Code local settings (auto-modified, not project code)
 .claude/settings.local.json
+
+# Playwright CLI artefacts
+.playwright-cli/
+.playwright/
