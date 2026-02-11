@@ -30,3 +30,5 @@ Changes needed:
 - [ ] History page: remove the "by exercise" view option
 - [ ] Workout page: consider removing the exercise filter pill (not useful past the first exercise or two)
 - [ ] Workout complete page: improve celebration and show workout stats
+- [ ] The Unit doesn't need to be on a separate column in the /history page. It could just be next to the column header "Weight" in brackets like for example: Weight (kg).
+- [ ] By default in the /workout page, we seem to input figures for the weight & reps fields. I would prefer if they were left empty. I can use the hints (previous & max) to gauge and set values as required.

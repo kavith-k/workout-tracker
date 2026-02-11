@@ -159,6 +159,7 @@
 					return async ({ update }) => {
 						await update();
 						deletingSession = false;
+						deleteDialogOpen = false;
 					};
 				}}
 				class="contents"
