@@ -93,9 +93,7 @@
 		<div class="space-y-4">
 			{#each data.session.exerciseLogs as log (log.id)}
 				<div
-					class="overflow-hidden rounded-2xl bg-card shadow-xs {log.status === 'skipped'
-						? 'opacity-60'
-						: ''}"
+					class="glass-card overflow-hidden {log.status === 'skipped' ? 'opacity-60' : ''}"
 					data-testid="exercise-log-card"
 				>
 					<div class="flex min-h-[44px] items-start justify-between px-4 py-3">

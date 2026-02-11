@@ -79,7 +79,7 @@
 			</Button>
 		</div>
 	{:else}
-		<div class="overflow-hidden rounded-2xl bg-card shadow-xs">
+		<div class="glass-card overflow-hidden">
 			{#each data.programs as program (program.id)}
 				<div
 					data-testid="program-card"

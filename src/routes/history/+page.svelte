@@ -49,9 +49,9 @@
 <div class="space-y-6">
 	<h1 class="text-3xl font-bold tracking-tight">History</h1>
 
-	<div class="flex rounded-xl bg-muted p-1" data-testid="view-toggle">
+	<div class="flex rounded-xl bg-card p-1" data-testid="view-toggle">
 		<span
-			class="flex min-h-[36px] flex-1 items-center justify-center rounded-lg bg-card px-3 text-sm font-medium text-foreground shadow-sm"
+			class="flex min-h-[36px] flex-1 items-center justify-center rounded-lg bg-neon px-3 text-sm font-medium text-neon-foreground"
 		>
 			By Date
 		</span>
@@ -82,7 +82,7 @@
 			</p>
 		</div>
 	{:else}
-		<div class="overflow-hidden rounded-2xl bg-card shadow-xs">
+		<div class="glass-card overflow-hidden">
 			{#each data.sessions as session (session.id)}
 				<div
 					data-testid="session-card"

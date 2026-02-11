@@ -20,10 +20,10 @@
 
 	{#if data.inProgressWorkout}
 		<div
-			class="rounded-2xl border border-yellow-600/30 bg-yellow-50 p-4 dark:bg-yellow-950/20"
+			class="rounded-2xl border border-neon/20 bg-neon/10 p-4"
 			data-testid="workout-in-progress-notice"
 		>
-			<p class="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+			<p class="text-sm font-medium text-neon">
 				A workout is already in progress. Please finish or stop it before starting a new one.
 			</p>
 			<Button
@@ -52,7 +52,7 @@
 				<h2 class="text-lg font-semibold" data-testid="active-program-name">
 					{data.activeProgram.name}
 				</h2>
-				<Badge variant="secondary">Active</Badge>
+				<Badge variant="default">Active</Badge>
 			</div>
 
 			{#if data.lastWorkout}
@@ -72,7 +72,7 @@
 		{/if}
 
 		<div data-testid="workout-day-buttons">
-			<div class="overflow-hidden rounded-2xl bg-card shadow-xs">
+			<div class="glass-card overflow-hidden">
 				{#each data.activeProgram.days as day (day.id)}
 					<form
 						method="POST"

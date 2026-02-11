@@ -88,7 +88,7 @@
 
 	{#if data.session.status === 'completed'}
 		<div
-			class="rounded-2xl bg-card p-4 text-center text-sm text-muted-foreground shadow-xs"
+			class="glass-card p-4 text-center text-sm text-muted-foreground"
 			data-testid="offline-completed-banner"
 		>
 			Workout stopped (pending sync)
@@ -102,8 +102,8 @@
 				<button
 					class="min-h-[36px] shrink-0 rounded-full px-4 py-1 text-sm font-medium transition-colors
 						{selectedExerciseLogId === log.id
-						? 'bg-foreground text-background'
-						: 'bg-card text-foreground shadow-xs'}
+						? 'neon-glow bg-neon text-neon-foreground'
+						: 'glass-card text-foreground'}
 						{log.status === 'skipped' ? 'line-through opacity-50' : ''}"
 					onclick={() => scrollToExercise(log.id)}
 					data-testid="exercise-nav-{log.id}"
@@ -119,9 +119,7 @@
 		{#each data.session.exerciseLogs as log (log.id)}
 			<div
 				id="exercise-log-{log.id}"
-				class="overflow-hidden rounded-2xl bg-card p-4 shadow-xs {log.status === 'skipped'
-					? 'opacity-60'
-					: ''}"
+				class="glass-card overflow-hidden p-4 {log.status === 'skipped' ? 'opacity-60' : ''}"
 				data-testid="exercise-card-{log.id}"
 			>
 				<div class="flex items-start justify-between">

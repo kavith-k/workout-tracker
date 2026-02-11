@@ -30,11 +30,12 @@
 			<a
 				href={resolve(tab.href as `/`)}
 				class="flex min-h-[50px] flex-1 flex-col items-center justify-center gap-0.5 pt-1.5 pb-1 text-center transition-colors {active
-					? 'text-foreground'
+					? 'text-neon'
 					: 'text-muted-foreground'}"
 			>
 				<tab.icon class="size-[22px] {active ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}" />
 				<span class="text-[10px] leading-tight font-medium">{tab.label}</span>
+				{#if active}<div class="mt-0.5 h-[3px] w-[3px] rounded-full bg-neon"></div>{/if}
 			</a>
 		{/each}
 	</div>

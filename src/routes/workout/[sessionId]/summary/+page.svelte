@@ -19,17 +19,12 @@
 	</div>
 
 	{#if allCompleted}
-		<div
-			class="rounded-2xl bg-green-50 p-4 text-center dark:bg-green-950/20"
-			data-testid="congrats-message"
-		>
-			<p class="font-semibold text-green-700 dark:text-green-300">
-				All exercises completed! Great work.
-			</p>
+		<div class="rounded-2xl bg-neon/10 p-4 text-center" data-testid="congrats-message">
+			<p class="font-semibold text-neon">All exercises completed! Great work.</p>
 		</div>
 	{/if}
 
-	<div class="rounded-2xl bg-card p-4 shadow-xs" data-testid="exercise-count">
+	<div class="glass-card p-4" data-testid="exercise-count">
 		<p class="text-lg font-semibold">
 			{data.summary.completedExercises}/{data.summary.totalExercises} exercises
 		</p>
@@ -43,7 +38,7 @@
 	{#if data.summary.prs.length > 0}
 		<div data-testid="pr-list">
 			<h2 class="mb-2 font-semibold">Personal Records</h2>
-			<div class="overflow-hidden rounded-2xl bg-card shadow-xs">
+			<div class="glass-card overflow-hidden">
 				{#each data.summary.prs as pr (pr.exerciseName)}
 					<div
 						class="flex items-center justify-between border-b border-border/40 p-3 last:border-b-0"

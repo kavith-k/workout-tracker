@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import { validateProgramUpload } from '$lib/schemas/program-upload';
+	import { themeStore } from '$lib/stores/theme.svelte';
 
 	let { form } = $props();
 
@@ -50,9 +51,49 @@
 
 	<section class="space-y-2">
 		<h2 class="px-1 pb-1.5 text-sm font-medium tracking-wide text-muted-foreground uppercase">
+			Appearance
+		</h2>
+		<div class="glass-card overflow-hidden">
+			<div class="flex min-h-[44px] items-center justify-between px-4 py-3">
+				<span>Theme</span>
+				<div class="flex rounded-lg bg-muted p-0.5">
+					<button
+						class="rounded-md px-3 py-1.5 text-xs font-medium transition-colors {themeStore.theme ===
+						'light'
+							? 'bg-neon text-neon-foreground'
+							: 'text-muted-foreground'}"
+						onclick={() => (themeStore.theme = 'light')}
+					>
+						Light
+					</button>
+					<button
+						class="rounded-md px-3 py-1.5 text-xs font-medium transition-colors {themeStore.theme ===
+						'dark'
+							? 'bg-neon text-neon-foreground'
+							: 'text-muted-foreground'}"
+						onclick={() => (themeStore.theme = 'dark')}
+					>
+						Dark
+					</button>
+					<button
+						class="rounded-md px-3 py-1.5 text-xs font-medium transition-colors {themeStore.theme ===
+						'system'
+							? 'bg-neon text-neon-foreground'
+							: 'text-muted-foreground'}"
+						onclick={() => (themeStore.theme = 'system')}
+					>
+						System
+					</button>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<section class="space-y-2">
+		<h2 class="px-1 pb-1.5 text-sm font-medium tracking-wide text-muted-foreground uppercase">
 			Export Data
 		</h2>
-		<div class="overflow-hidden rounded-2xl bg-card shadow-xs">
+		<div class="glass-card overflow-hidden">
 			<a
 				href={resolve('/settings/export/json')}
 				class="flex min-h-[44px] items-center border-b border-border/40 px-4 py-3 last:border-b-0 active:bg-muted/60"
@@ -99,7 +140,7 @@
 			<input bind:this={hiddenDataInput} type="hidden" name="data" />
 		</form>
 
-		<div class="overflow-hidden rounded-2xl bg-card shadow-xs">
+		<div class="glass-card overflow-hidden">
 			<button
 				class="flex min-h-[44px] w-full items-center px-4 py-3 text-left active:bg-muted/60"
 				data-testid="upload-program-btn"

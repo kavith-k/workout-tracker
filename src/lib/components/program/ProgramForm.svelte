@@ -199,7 +199,7 @@
 	{/if}
 
 	{#each days as day, dayIndex (day.tempId)}
-		<div class="space-y-4 rounded-lg border border-border p-4">
+		<div class="glass-card space-y-4 p-4">
 			<div class="flex items-center gap-2">
 				<div class="flex-1">
 					<Input placeholder="Day name (e.g., Push Day)" bind:value={day.name} />
