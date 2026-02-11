@@ -1,4 +1,5 @@
 import { openDB, type IDBPDatabase } from 'idb';
+import { generateId } from '$lib/utils';
 
 export type ActionType =
 	| 'UPDATE_SET'
@@ -55,7 +56,7 @@ export async function addToQueue(
 ): Promise<string> {
 	const db = getDb();
 	if (!db) return '';
-	const id = crypto.randomUUID();
+	const id = generateId();
 	const entry: QueuedAction = {
 		id,
 		timestamp: Date.now(),
