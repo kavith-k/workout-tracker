@@ -46,10 +46,7 @@ test.describe.serial('Workout Flow', () => {
 		await expect(page.getByTestId('workout-title')).toContainText('Push Day');
 		await expect(page.getByText('Workout Test Program')).toBeVisible();
 
-		// Should see exercise navigator
-		await expect(page.getByTestId('exercise-navigator')).toBeVisible();
-
-		// Should see all exercise cards (use heading selectors to avoid navigator duplicates)
+		// Should see all exercise cards
 		const exerciseHeadings = page.locator('h3[data-testid^="exercise-name-"]');
 		await expect(exerciseHeadings).toHaveCount(3);
 		await expect(exerciseHeadings.filter({ hasText: 'Bench Press' })).toBeVisible();

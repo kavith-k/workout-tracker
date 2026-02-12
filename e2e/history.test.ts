@@ -4,7 +4,7 @@ test.describe.serial('History', () => {
 	test('shows history by date with completed workouts', async ({ page }) => {
 		await page.goto('/history');
 
-		await expect(page.getByText('History')).toBeVisible();
+		await expect(page.getByRole('heading', { name: 'History' })).toBeVisible();
 		await expect(page.getByTestId('view-toggle')).toBeVisible();
 
 		// Should have session cards from previous workout-flow tests
@@ -67,8 +67,8 @@ test.describe.serial('History', () => {
 		await sessionWithSets.first().locator('a').click();
 		await expect(page.getByTestId('session-detail')).toBeVisible();
 
-		// Should show session metadata
-		await expect(page.getByTestId('session-detail-date')).toBeVisible();
+		// Session header should show the date (embedded in subtitle)
+		await expect(page.getByText(/\d{1,2}\s\w+\s\d{4}/)).toBeVisible();
 
 		// Should show exercise names
 		await expect(page.getByTestId('exercise-log-name').first()).toBeVisible();
@@ -101,8 +101,9 @@ test.describe.serial('History', () => {
 		await page.getByTestId('delete-exercise-log-btn').click();
 
 		// Confirm deletion in the dialog
-		await expect(page.getByText('Delete Exercise')).toBeVisible();
-		await page.getByRole('button', { name: 'Delete', exact: true }).click();
+		const deleteExerciseDialog = page.getByLabel('Delete Exercise');
+		await expect(deleteExerciseDialog).toBeVisible();
+		await deleteExerciseDialog.getByRole('button', { name: 'Delete' }).click();
 
 		// Wait for the exercise log to be removed (use auto-retrying assertion)
 		await expect(exerciseCards).toHaveCount(countBefore - 1);
@@ -121,8 +122,9 @@ test.describe.serial('History', () => {
 		await page.getByRole('menuitem', { name: 'Delete' }).click();
 
 		// Confirm deletion in the dialog
-		await expect(page.getByText('Delete Workout')).toBeVisible();
-		await page.getByRole('button', { name: 'Delete' }).click();
+		const deleteWorkoutDialog = page.getByLabel('Delete Workout');
+		await expect(deleteWorkoutDialog).toBeVisible();
+		await deleteWorkoutDialog.getByRole('button', { name: 'Delete' }).click();
 
 		// Wait for the session to be removed (use auto-retrying assertion)
 		await expect(sessionCards).toHaveCount(countBefore - 1);

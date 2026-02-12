@@ -4,7 +4,7 @@ test.describe.serial('Export', () => {
 	test('settings page shows export buttons', async ({ page }) => {
 		await page.goto('/settings');
 
-		await expect(page.getByText('Settings')).toBeVisible();
+		await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
 		await expect(page.getByText('Export Data')).toBeVisible();
 		await expect(page.getByTestId('export-json-btn')).toBeVisible();
 		await expect(page.getByTestId('export-csv-btn')).toBeVisible();
