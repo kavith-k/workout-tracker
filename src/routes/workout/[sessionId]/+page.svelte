@@ -23,7 +23,6 @@
 		DialogTitle
 	} from '$lib/components/ui/dialog';
 	import { Label } from '$lib/components/ui/label';
-	import { Separator } from '$lib/components/ui/separator';
 	import { addToQueue, type ActionType } from '$lib/offline/queue';
 	import { offlineState, updatePendingCount } from '$lib/offline/stores.svelte';
 
@@ -47,13 +46,6 @@
 	let adhocExerciseName = $state('');
 	let adhocError = $state('');
 	let adhocSubmitting = $state(false);
-	let selectedExerciseLogId = $state<number | null>(null);
-
-	function scrollToExercise(exerciseLogId: number) {
-		selectedExerciseLogId = exerciseLogId;
-		const el = document.getElementById(`exercise-log-${exerciseLogId}`);
-		if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-	}
 
 	function formatDate(date: Date): string {
 		return new Date(date).toLocaleDateString('en-GB', {
@@ -78,7 +70,7 @@
 			<Button
 				variant="destructive"
 				size="sm"
-				class="min-h-[44px]"
+				class="min-h-[44px] rounded-xl"
 				onclick={() => (stopDialogOpen = true)}
 				data-testid="stop-workout-btn"
 			>
@@ -89,40 +81,19 @@
 
 	{#if data.session.status === 'completed'}
 		<div
-			class="rounded-lg border border-border bg-muted/50 p-4 text-center text-sm text-muted-foreground"
+			class="glass-card p-4 text-center text-sm text-muted-foreground"
 			data-testid="offline-completed-banner"
 		>
 			Workout stopped (pending sync)
 		</div>
 	{/if}
 
-	{#if data.session.status === 'in_progress'}
-		<!-- Exercise navigator -->
-		<div class="flex gap-2 overflow-x-auto pb-2" data-testid="exercise-navigator">
-			{#each data.session.exerciseLogs as log (log.id)}
-				<button
-					class="min-h-[44px] shrink-0 rounded-full border px-3 py-1 text-sm transition-colors
-						{selectedExerciseLogId === log.id
-						? 'border-foreground bg-foreground text-background'
-						: 'border-border hover:bg-muted'}
-						{log.status === 'skipped' ? 'line-through opacity-50' : ''}"
-					onclick={() => scrollToExercise(log.id)}
-					data-testid="exercise-nav-{log.id}"
-				>
-					{log.exerciseName}
-				</button>
-			{/each}
-		</div>
-	{/if}
-
-	<Separator />
-
 	<!-- Exercise cards -->
 	<div class="space-y-6">
 		{#each data.session.exerciseLogs as log (log.id)}
 			<div
 				id="exercise-log-{log.id}"
-				class="rounded-lg border border-border p-4 {log.status === 'skipped' ? 'opacity-60' : ''}"
+				class="glass-card overflow-hidden p-4 {log.status === 'skipped' ? 'opacity-60' : ''}"
 				data-testid="exercise-card-{log.id}"
 			>
 				<div class="flex items-start justify-between">
@@ -236,13 +207,23 @@
 								class="grid grid-cols-[2rem_1fr_1fr_auto] items-center gap-2"
 								data-testid="set-row-{set.id}"
 							>
-								<span class="text-center text-sm text-muted-foreground">{set.setNumber}</span>
+								<span
+									class="text-center text-sm {set.weight != null && set.reps != null
+										? 'font-semibold text-green-600 dark:text-green-400'
+										: 'text-muted-foreground'}"
+								>
+									{#if set.weight != null && set.reps != null}
+										&#10003;
+									{:else}
+										{set.setNumber}
+									{/if}
+								</span>
 								<form
 									id="set-form-{set.id}"
 									method="POST"
 									action="?/updateSet"
 									use:enhance={({ formData }) => {
-										return async ({ result }) => {
+										return async ({ result, update }) => {
 											if (isNetworkError(result)) {
 												const weight = formData.get('weight');
 												const reps = formData.get('reps');
@@ -267,6 +248,8 @@
 														break;
 													}
 												}
+											} else {
+												await update({ reset: false });
 											}
 										};
 									}}
@@ -411,7 +394,7 @@
 		<div class="flex justify-center pb-4">
 			<Button
 				variant="outline"
-				class="min-h-[44px]"
+				class="min-h-[44px] rounded-xl"
 				onclick={() => (adhocDialogOpen = true)}
 				data-testid="add-adhoc-btn"
 			>

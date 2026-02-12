@@ -8,25 +8,24 @@
 		inProgressWorkout?: { id: number; dayName: string; programName: string } | null;
 	} = $props();
 
-	// Hide banner when already on the workout page
 	let isOnWorkoutPage = $derived(page.url.pathname.startsWith('/workout/'));
 	let showBanner = $derived(inProgressWorkout && !isOnWorkoutPage);
 </script>
 
 {#if showBanner}
 	<div
-		class="border-b border-yellow-600/30 bg-yellow-50 px-4 py-2 dark:bg-yellow-950/20"
+		class="border-b border-neon/20 bg-neon/5 px-5 py-2.5 backdrop-blur-sm dark:bg-neon/10"
 		data-testid="resume-workout-banner"
 	>
 		<div class="flex items-center justify-between">
-			<p class="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+			<p class="text-sm font-medium text-neon">
 				Workout in progress: {inProgressWorkout!.dayName}
 			</p>
 			<Button
 				href="/workout/{inProgressWorkout!.id}"
 				variant="outline"
 				size="sm"
-				class="min-h-[44px]">Resume</Button
+				class="min-h-[44px] rounded-xl">Resume</Button
 			>
 		</div>
 	</div>

@@ -39,3 +39,7 @@ Add deployment/self-hosting documentation covering:
 - [ ] History page: remove the "by exercise" view option
 - [ ] Workout page: consider removing the exercise filter pill (not useful past the first exercise or two)
 - [ ] Workout complete page: improve celebration and show workout stats
+- [ ] The Unit doesn't need to be on a separate column in the /history page. It could just be next to the column header "Weight" in brackets like for example: Weight (kg).
+- [ ] Similarly, the weight unit (kg/ lbs) while recording exercises in /workout need not be repeated for each weight input. I think it could be with the header: Weight either the units are in a box that can be toggled, or there's an actual toggle to switch between units for each exercise but no necessarily for each set!
+- [ ] By default in the /workout page, we seem to input figures for the weight & reps fields. I would prefer if they were left empty. I can use the hints (previous & max) to gauge and set values as required.
+- [ ] Check out all the Project Diagnostics warnings/ errors in Zed [Manual Check - Kavith to do]
