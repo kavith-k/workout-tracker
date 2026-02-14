@@ -25,6 +25,7 @@
 	let {
 		exercise,
 		overload,
+		prescribedSets,
 		onupdateset,
 		ontoggleunit,
 		onaddset,
@@ -32,11 +33,19 @@
 	}: {
 		exercise: ExerciseLog;
 		overload: OverloadData | undefined;
+		prescribedSets?: number;
 		onupdateset: (setIndex: number, field: 'weight' | 'reps', value: number | null) => void;
 		ontoggleunit: () => void;
 		onaddset: () => void;
 		onremoveset: (setIndex: number) => void;
 	} = $props();
+
+	function canRemoveSet(index: number): boolean {
+		// If no prescribed count is known, fall back to allowing removal when there's more than one set
+		if (prescribedSets == null) return exercise.sets.length > 1;
+		// Only allow removal of manually added sets (beyond the prescribed count)
+		return index >= prescribedSets;
+	}
 
 	function formatDate(date: Date): string {
 		return new Date(date).toLocaleDateString('en-GB', {
@@ -131,7 +140,7 @@
 					}}
 					data-testid="reps-input-{i}"
 				/>
-				{#if exercise.sets.length > 1}
+				{#if canRemoveSet(i)}
 					<Button
 						type="button"
 						variant="ghost"

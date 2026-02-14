@@ -40,11 +40,13 @@
 	let {
 		exerciseLogs,
 		progressiveOverload,
+		prescribedSetCounts = {},
 		onfinish,
 		onaddexercise
 	}: {
 		exerciseLogs: ExerciseLogData[];
 		progressiveOverload: OverloadMap;
+		prescribedSetCounts?: Record<number, number>;
 		onfinish: () => void;
 		onaddexercise: () => void;
 	} = $props();
@@ -331,6 +333,7 @@
 		<ExerciseStep
 			exercise={currentLog}
 			overload={progressiveOverload[currentLog.id]}
+			prescribedSets={prescribedSetCounts[currentLog.id]}
 			onupdateset={handleUpdateSet}
 			ontoggleunit={handleToggleUnit}
 			onaddset={handleAddSet}
