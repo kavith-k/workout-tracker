@@ -96,7 +96,7 @@
 			<Button
 				variant="destructive"
 				size="sm"
-				class="min-h-[44px] rounded-xl"
+				class="min-h-11 rounded-xl"
 				onclick={() => (stopDialogOpen = true)}
 				data-testid="stop-workout-btn"
 			>
@@ -156,7 +156,7 @@
 										type="submit"
 										variant="outline"
 										size="sm"
-										class="min-h-[44px]"
+										class="min-h-11"
 										data-testid="unskip-{log.id}"
 									>
 										Unskip
@@ -185,7 +185,7 @@
 										type="submit"
 										variant="ghost"
 										size="sm"
-										class="min-h-[44px]"
+										class="min-h-11"
 										data-testid="skip-{log.id}"
 									>
 										Skip
@@ -348,7 +348,7 @@
 											type="submit"
 											variant="ghost"
 											size="icon-sm"
-											class="min-h-[44px] min-w-[44px] text-muted-foreground"
+											class="min-h-11 min-w-11 text-muted-foreground"
 											data-testid="remove-set-{set.id}"
 										>
 											&times;
@@ -396,7 +396,7 @@
 								type="submit"
 								variant="ghost"
 								size="sm"
-								class="min-h-[44px] text-muted-foreground"
+								class="min-h-11 text-muted-foreground"
 								data-testid="add-set-{log.id}"
 							>
 								+ Add Set
@@ -412,7 +412,7 @@
 		<div class="flex justify-center pb-4">
 			<Button
 				variant="outline"
-				class="min-h-[44px] rounded-xl"
+				class="min-h-11 rounded-xl"
 				onclick={() => (adhocDialogOpen = true)}
 				data-testid="add-adhoc-btn"
 			>
@@ -432,7 +432,7 @@
 			</AlertDialogDescription>
 		</AlertDialogHeader>
 		<AlertDialogFooter>
-			<AlertDialogCancel class="min-h-[44px]">Continue Workout</AlertDialogCancel>
+			<AlertDialogCancel class="min-h-11">Continue Workout</AlertDialogCancel>
 			<form
 				method="POST"
 				action="?/stop"
@@ -456,7 +456,7 @@
 				<input type="hidden" name="sessionId" value={data.session.id} />
 				<AlertDialogAction
 					type="submit"
-					class="min-h-[44px]"
+					class="min-h-11"
 					disabled={stoppingWorkout}
 					data-testid="confirm-stop-btn"
 				>
