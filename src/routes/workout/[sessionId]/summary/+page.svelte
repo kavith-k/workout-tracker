@@ -61,7 +61,7 @@
 		</div>
 		<div class="glass-card p-4 text-center">
 			<p class="text-2xl font-bold" data-testid="stat-volume">
-				{formatVolume(data.summary.totalVolume)}
+				{formatVolume(data.summary.totalVolume)} kg
 			</p>
 			<p class="text-xs text-muted-foreground">Volume</p>
 		</div>

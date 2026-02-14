@@ -67,7 +67,14 @@ export const actions: Actions = {
 
 		let unit: 'kg' | 'lbs' | undefined;
 		for (const set of sets) {
-			if (set.setLogId <= 0) continue; // skip placeholder sets from offline add
+			if (typeof set.setLogId === 'number' && set.setLogId < 0) continue; // skip offline placeholders
+			if (
+				typeof set.setLogId !== 'number' ||
+				!Number.isInteger(set.setLogId) ||
+				set.setLogId <= 0
+			) {
+				return fail(400, { error: 'set setLogId must be a positive integer' });
+			}
 			updateSetLog(db, set.setLogId, {
 				weight: set.weight,
 				reps: set.reps,

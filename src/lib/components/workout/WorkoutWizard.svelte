@@ -51,7 +51,8 @@
 
 	let currentIndex = $state(0);
 	let saving = $state(false);
-	let lastKnownLength = $state(-1);
+	let saveError = $state<string | null>(null);
+	let lastFingerprint = $state('');
 
 	function cloneLogs(logs: ExerciseLogData[]): ExerciseLogData[] {
 		return logs.map((log) => ({
@@ -60,15 +61,38 @@
 		}));
 	}
 
+	function computeFingerprint(logs: ExerciseLogData[]): string {
+		return logs.map((log) => `${log.id}:${log.sets.map((s) => s.id).join(',')}`).join('|');
+	}
+
+	function createPlaceholderSet(log: ExerciseLogData): SetData {
+		const lastSet = log.sets[log.sets.length - 1];
+		return {
+			id: -Date.now(),
+			exerciseLogId: log.id,
+			setNumber: log.sets.length + 1,
+			weight: null,
+			reps: null,
+			unit: lastSet?.unit ?? 'kg',
+			createdAt: new Date()
+		};
+	}
+
 	// Deep clone exercise logs into local state for editing without server round-trips.
 	// Re-syncs when exerciseLogs changes (e.g. after page reload or adhoc add).
 	let localLogs = $state<ExerciseLogData[]>([]);
 
 	$effect(() => {
-		const newLen = exerciseLogs.length;
-		if (newLen !== lastKnownLength) {
-			localLogs = cloneLogs(exerciseLogs);
-			lastKnownLength = newLen;
+		const fingerprint = computeFingerprint(exerciseLogs);
+		if (fingerprint !== lastFingerprint) {
+			if (lastFingerprint === '') {
+				// Initial load -- full clone
+				localLogs = cloneLogs(exerciseLogs);
+			} else {
+				// Subsequent changes -- preserve in-progress edits
+				syncFromServer();
+			}
+			lastFingerprint = fingerprint;
 		}
 	});
 
@@ -131,11 +155,18 @@
 					sets: setsPayload
 				});
 			} else if (!response.ok) {
-				// Check if it's a network error vs a server error
-				saving = false;
+				let message = 'Failed to save exercise';
+				try {
+					const body = await response.json();
+					if (body?.error) message = body.error;
+				} catch {
+					// Response body not JSON, use default message
+				}
+				saveError = message;
 				return false;
 			}
 
+			saveError = null;
 			return true;
 		} catch {
 			// Network error -- queue offline
@@ -220,49 +251,16 @@
 
 			if (!response.ok && !offlineState.isOnline) {
 				await queueAction('ADD_SET', { exerciseLogId: log.id });
-				// Add placeholder locally
-				const lastSet = log.sets[log.sets.length - 1];
-				log.sets.push({
-					id: -Date.now(),
-					exerciseLogId: log.id,
-					setNumber: log.sets.length + 1,
-					weight: null,
-					reps: null,
-					unit: lastSet?.unit ?? 'kg',
-					createdAt: new Date()
-				});
+				log.sets.push(createPlaceholderSet(log));
 			} else if (response.ok) {
-				// Parse the response to get updated data
-				// SvelteKit form actions return HTML -- we need to invalidate
-				// For now, add a placeholder and let reload sync
-				const lastSet = log.sets[log.sets.length - 1];
-				log.sets.push({
-					id: -Date.now(),
-					exerciseLogId: log.id,
-					setNumber: log.sets.length + 1,
-					weight: null,
-					reps: null,
-					unit: lastSet?.unit ?? 'kg',
-					createdAt: new Date()
-				});
-				// Invalidate to get the real set ID from server
+				// Invalidate to get the real set from server data
 				const { invalidateAll } = await import('$app/navigation');
 				await invalidateAll();
-				// Re-sync local logs but preserve current edits
 				syncFromServer();
 			}
 		} catch {
 			await queueAction('ADD_SET', { exerciseLogId: log.id });
-			const lastSet = log.sets[log.sets.length - 1];
-			log.sets.push({
-				id: -Date.now(),
-				exerciseLogId: log.id,
-				setNumber: log.sets.length + 1,
-				weight: null,
-				reps: null,
-				unit: lastSet?.unit ?? 'kg',
-				createdAt: new Date()
-			});
+			log.sets.push(createPlaceholderSet(log));
 		}
 	}
 
@@ -339,6 +337,10 @@
 			onremoveset={handleRemoveSet}
 		/>
 	{/key}
+{/if}
+
+{#if saveError}
+	<p class="px-4 py-2 text-sm text-destructive">{saveError}</p>
 {/if}
 
 <WizardBottomBar

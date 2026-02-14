@@ -50,9 +50,7 @@
 		return sets.map((s) => `${s.weight}${s.unit} x ${s.reps}`).join(', ');
 	}
 
-	function getUnit(): string {
-		return exercise.sets[0]?.unit ?? 'kg';
-	}
+	let unit = $derived(exercise.sets[0]?.unit ?? 'kg');
 </script>
 
 <div class="glass-card overflow-hidden p-4" data-testid="exercise-step">
@@ -99,7 +97,7 @@
 					onclick={ontoggleunit}
 					data-testid="unit-toggle"
 				>
-					{getUnit()}
+					{unit}
 				</button>
 			</span>
 			<span>Reps</span>

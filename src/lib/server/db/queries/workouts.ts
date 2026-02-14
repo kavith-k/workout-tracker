@@ -304,11 +304,14 @@ export function getWorkoutSummary(db: Db, sessionId: number): WorkoutSummary | n
 		)
 		.all();
 
+	const LBS_TO_KG = 0.453592;
 	const totalSets = allSets.length;
-	const totalVolume = allSets.reduce(
-		(sum, row) => sum + (row.set_logs.weight ?? 0) * (row.set_logs.reps ?? 0),
-		0
-	);
+	const totalVolume = allSets.reduce((sum, row) => {
+		const weight = row.set_logs.weight ?? 0;
+		const reps = row.set_logs.reps ?? 0;
+		const weightKg = row.set_logs.unit === 'lbs' ? weight * LBS_TO_KG : weight;
+		return sum + weightKg * reps;
+	}, 0);
 
 	const durationMinutes =
 		session.completedAt && session.startedAt

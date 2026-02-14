@@ -37,7 +37,10 @@ export const POST: RequestHandler = async ({ request }) => {
 				}
 				let unit: 'kg' | 'lbs' | undefined;
 				for (const set of payload.sets) {
-					if (!isValidId(set.setLogId)) continue; // skip placeholder sets
+					if (typeof set.setLogId === 'number' && set.setLogId < 0) continue; // skip offline placeholders
+					if (!isValidId(set.setLogId)) {
+						return badRequest('set setLogId must be a positive integer');
+					}
 					if (set.unit && !isValidUnit(set.unit)) {
 						return badRequest('set unit must be kg or lbs');
 					}
