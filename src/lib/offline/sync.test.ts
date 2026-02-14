@@ -28,8 +28,12 @@ function makeAction(overrides: Partial<QueuedAction> = {}): QueuedAction {
 	return {
 		id: overrides.id ?? 'action-1',
 		timestamp: overrides.timestamp ?? Date.now(),
-		action: overrides.action ?? 'UPDATE_SET',
-		payload: overrides.payload ?? { setLogId: 1, weight: 80 },
+		action: overrides.action ?? 'SAVE_EXERCISE',
+		payload: overrides.payload ?? {
+			exerciseLogId: 1,
+			exerciseId: 1,
+			sets: [{ setLogId: 1, weight: 80, reps: 8, unit: 'kg' as const }]
+		},
 		retryCount: overrides.retryCount ?? 0
 	};
 }

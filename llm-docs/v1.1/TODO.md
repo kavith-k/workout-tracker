@@ -41,3 +41,15 @@ Add deployment/self-hosting documentation covering:
 - [x] By default in the /workout page, we seem to input figures for the weight & reps fields. I would prefer if they were left empty. I can use the hints (previous & max) to gauge and set values as required.
 - [x] Check out all the Project Diagnostics warnings/ errors in Zed [Manual Check - Kavith to do]
 - [x] Fix all the E2E test warnings
+
+## Workout Wizard Redesign
+
+Replaced the scrollable exercise list (which caused race conditions from concurrent onchange submissions) with a wizard-style flow showing one exercise at a time. Saves happen on navigation, not on input change.
+
+- [x] Wizard navigation: one exercise at a time with Next/Skip/Previous/Finish buttons
+- [x] Progress bar: scrollable numbered circles, colour-coded (green outline = active, filled green = completed, muted = untouched)
+- [x] Single save point per exercise: save on Next/Previous/Jump/Finish, eliminating form submission race conditions
+- [x] Simplified offline queue: replaced UPDATE_SET, SKIP_EXERCISE, UNSKIP_EXERCISE, UPDATE_UNIT with single SAVE_EXERCISE action
+- [x] Implicit skip: exercises without logged reps are automatically skipped on workout completion
+- [x] New components: WorkoutWizard, ExerciseStep, WizardProgressBar, WizardBottomBar
+- [x] Updated E2E tests and sync endpoint unit tests

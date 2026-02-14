@@ -2,14 +2,11 @@ import { openDB, type IDBPDatabase } from 'idb';
 import { generateId } from '$lib/utils';
 
 export type ActionType =
-	| 'UPDATE_SET'
-	| 'SKIP_EXERCISE'
-	| 'UNSKIP_EXERCISE'
+	| 'SAVE_EXERCISE'
 	| 'COMPLETE_WORKOUT'
 	| 'ADD_ADHOC'
 	| 'ADD_SET'
-	| 'REMOVE_SET'
-	| 'UPDATE_UNIT';
+	| 'REMOVE_SET';
 
 export interface QueuedAction {
 	id: string;
@@ -17,13 +14,16 @@ export interface QueuedAction {
 	action: ActionType;
 	payload: {
 		setLogId?: number;
-		weight?: number | null;
-		reps?: number | null;
-		unit?: 'kg' | 'lbs';
 		exerciseLogId?: number;
 		exerciseId?: number;
 		sessionId?: number;
 		exerciseName?: string;
+		sets?: Array<{
+			setLogId: number;
+			weight: number | null;
+			reps: number | null;
+			unit: 'kg' | 'lbs';
+		}>;
 	};
 	retryCount: number;
 }

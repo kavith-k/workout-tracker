@@ -2,7 +2,6 @@
 	import { enhance } from '$app/forms';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
-	import { Badge } from '$lib/components/ui/badge';
 	import {
 		AlertDialog,
 		AlertDialogAction,
@@ -25,6 +24,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import { addToQueue, type ActionType } from '$lib/offline/queue';
 	import { offlineState, updatePendingCount } from '$lib/offline/stores.svelte';
+	import WorkoutWizard from '$lib/components/workout/WorkoutWizard.svelte';
 
 	let { data } = $props();
 
@@ -46,63 +46,12 @@
 	let adhocExerciseName = $state('');
 	let adhocError = $state('');
 	let adhocSubmitting = $state(false);
-
-	function formatDate(date: Date): string {
-		return new Date(date).toLocaleDateString('en-GB', {
-			day: 'numeric',
-			month: 'short',
-			year: 'numeric'
-		});
-	}
-
-	function formatPreviousSets(sets: Array<{ weight: number; reps: number; unit: string }>): string {
-		return sets.map((s) => `${s.weight}${s.unit} x ${s.reps}`).join(', ');
-	}
-
-	function getExerciseUnit(log: { sets: Array<{ unit: string }> }): string {
-		return log.sets[0]?.unit ?? 'kg';
-	}
-
-	function toggleExerciseUnit(log: {
-		id: number;
-		exerciseId: number | null;
-		sets: Array<{ id: number; unit: string }>;
-	}) {
-		const currentUnit = getExerciseUnit(log);
-		const newUnit = currentUnit === 'kg' ? 'lbs' : 'kg';
-
-		for (const set of log.sets) {
-			set.unit = newUnit;
-
-			const form = document.getElementById(`set-form-${set.id}`) as HTMLFormElement | null;
-			if (form) {
-				const unitInput = form.querySelector<HTMLInputElement>('input[name="unit"]');
-				if (unitInput) {
-					unitInput.value = newUnit;
-				}
-				form.requestSubmit();
-			}
-		}
-	}
 </script>
 
 <div class="space-y-4">
-	<div class="flex items-center justify-between">
-		<div>
-			<h1 class="text-xl font-bold" data-testid="workout-title">{data.session.dayName}</h1>
-			<p class="text-sm text-muted-foreground">{data.session.programName}</p>
-		</div>
-		{#if data.session.status === 'in_progress'}
-			<Button
-				variant="destructive"
-				size="sm"
-				class="min-h-11 rounded-xl"
-				onclick={() => (stopDialogOpen = true)}
-				data-testid="stop-workout-btn"
-			>
-				Stop Workout
-			</Button>
-		{/if}
+	<div>
+		<h1 class="text-xl font-bold" data-testid="workout-title">{data.session.dayName}</h1>
+		<p class="text-sm text-muted-foreground">{data.session.programName}</p>
 	</div>
 
 	{#if data.session.status === 'completed'}
@@ -114,311 +63,13 @@
 		</div>
 	{/if}
 
-	<!-- Exercise cards -->
-	<div class="space-y-6">
-		{#each data.session.exerciseLogs as log (log.id)}
-			<div
-				id="exercise-log-{log.id}"
-				class="glass-card overflow-hidden p-4 {log.status === 'skipped' ? 'opacity-60' : ''}"
-				data-testid="exercise-card-{log.id}"
-			>
-				<div class="flex items-start justify-between">
-					<div>
-						<h3 class="font-semibold" data-testid="exercise-name-{log.id}">
-							{log.exerciseName}
-						</h3>
-						{#if log.isAdhoc}
-							<Badge variant="outline" class="mt-1">Ad-hoc</Badge>
-						{/if}
-					</div>
-					<div class="flex gap-2">
-						{#if data.session.status === 'in_progress'}
-							{#if log.status === 'skipped'}
-								<form
-									method="POST"
-									action="?/unskip"
-									use:enhance={() => {
-										return async ({ result, update }) => {
-											if (isNetworkError(result)) {
-												await queueAction('UNSKIP_EXERCISE', {
-													exerciseLogId: log.id
-												});
-												const unskipLog = data.session.exerciseLogs.find((l) => l.id === log.id);
-												if (unskipLog) unskipLog.status = 'logged';
-											} else {
-												await update();
-											}
-										};
-									}}
-								>
-									<input type="hidden" name="exerciseLogId" value={log.id} />
-									<Button
-										type="submit"
-										variant="outline"
-										size="sm"
-										class="min-h-11"
-										data-testid="unskip-{log.id}"
-									>
-										Unskip
-									</Button>
-								</form>
-							{:else}
-								<form
-									method="POST"
-									action="?/skip"
-									use:enhance={() => {
-										return async ({ result, update }) => {
-											if (isNetworkError(result)) {
-												await queueAction('SKIP_EXERCISE', {
-													exerciseLogId: log.id
-												});
-												const skipLog = data.session.exerciseLogs.find((l) => l.id === log.id);
-												if (skipLog) skipLog.status = 'skipped';
-											} else {
-												await update();
-											}
-										};
-									}}
-								>
-									<input type="hidden" name="exerciseLogId" value={log.id} />
-									<Button
-										type="submit"
-										variant="ghost"
-										size="sm"
-										class="min-h-11"
-										data-testid="skip-{log.id}"
-									>
-										Skip
-									</Button>
-								</form>
-							{/if}
-						{/if}
-					</div>
-				</div>
-
-				<!-- Progressive overload hints -->
-				{#if data.progressiveOverload[log.id]}
-					{@const overload = data.progressiveOverload[log.id]}
-					<div class="mt-2 space-y-0.5 text-xs text-muted-foreground">
-						{#if overload.previous}
-							<p data-testid="previous-hint-{log.id}">
-								Previous ({formatDate(overload.previous.date)}): {formatPreviousSets(
-									overload.previous.sets
-								)}
-							</p>
-						{/if}
-						{#if overload.max}
-							<p data-testid="max-hint-{log.id}">
-								Max: {overload.max.weight}{overload.max.unit} x {overload.max.reps} reps ({formatDate(
-									overload.max.date
-								)})
-							</p>
-						{/if}
-					</div>
-				{/if}
-
-				{#if log.status !== 'skipped'}
-					<!-- Set rows -->
-					<div class="mt-3 space-y-2">
-						<div
-							class="grid grid-cols-[2rem_1fr_1fr_auto] items-center gap-2 text-xs font-medium text-muted-foreground"
-						>
-							<span>Set</span>
-							<span class="flex items-center gap-1">
-								Weight
-								{#if data.session.status === 'in_progress'}
-									<button
-										type="button"
-										class="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-										onclick={() => toggleExerciseUnit(log)}
-										data-testid="unit-toggle-{log.id}"
-									>
-										{getExerciseUnit(log)}
-									</button>
-								{:else}
-									<span class="text-[10px]">({getExerciseUnit(log)})</span>
-								{/if}
-							</span>
-							<span>Reps</span>
-							<span></span>
-						</div>
-						{#each log.sets as set (set.id)}
-							<div
-								class="grid grid-cols-[2rem_1fr_1fr_auto] items-center gap-2"
-								data-testid="set-row-{set.id}"
-							>
-								<span
-									class="text-center text-sm {set.weight != null && set.reps != null
-										? 'font-semibold text-green-600 dark:text-green-400'
-										: 'text-muted-foreground'}"
-								>
-									{#if set.weight != null && set.reps != null}
-										&#10003;
-									{:else}
-										{set.setNumber}
-									{/if}
-								</span>
-								<form
-									id="set-form-{set.id}"
-									method="POST"
-									action="?/updateSet"
-									use:enhance={({ formData }) => {
-										return async ({ result, update }) => {
-											if (isNetworkError(result)) {
-												const weight = formData.get('weight');
-												const reps = formData.get('reps');
-												await queueAction('UPDATE_SET', {
-													setLogId: Number(formData.get('setLogId')),
-													exerciseId: Number(formData.get('exerciseId')),
-													weight: weight === '' ? null : Number(weight),
-													reps: reps === '' ? null : Number(reps),
-													unit: formData.get('unit')
-												});
-												for (const exerciseLog of data.session.exerciseLogs) {
-													const setEntry = exerciseLog.sets.find(
-														(s) => s.id === Number(formData.get('setLogId'))
-													);
-													if (setEntry) {
-														const w = formData.get('weight');
-														const r = formData.get('reps');
-														const u = formData.get('unit') as 'kg' | 'lbs' | null;
-														if (w !== null) setEntry.weight = w === '' ? null : Number(w);
-														if (r !== null) setEntry.reps = r === '' ? null : Number(r);
-														if (u) setEntry.unit = u;
-														break;
-													}
-												}
-											} else {
-												await update({ reset: false });
-											}
-										};
-									}}
-									class="contents"
-								>
-									<input type="hidden" name="setLogId" value={set.id} />
-									<input type="hidden" name="exerciseLogId" value={log.id} />
-									<input type="hidden" name="exerciseId" value={log.exerciseId} />
-									<Input
-										type="number"
-										name="weight"
-										value={set.weight ?? ''}
-										step="0.5"
-										min="0"
-										inputmode="decimal"
-										onchange={(e) => e.currentTarget.form?.requestSubmit()}
-										data-testid="weight-input-{set.id}"
-									/>
-									<input type="hidden" name="unit" value={set.unit} />
-									<Input
-										type="number"
-										name="reps"
-										value={set.reps ?? ''}
-										min="0"
-										inputmode="numeric"
-										onchange={(e) => e.currentTarget.form?.requestSubmit()}
-										data-testid="reps-input-{set.id}"
-									/>
-								</form>
-								{#if data.session.status === 'in_progress' && log.sets.length > 1}
-									<form
-										method="POST"
-										action="?/removeSet"
-										use:enhance={() => {
-											return async ({ result, update }) => {
-												if (isNetworkError(result)) {
-													await queueAction('REMOVE_SET', {
-														setLogId: set.id
-													});
-													for (const exerciseLog of data.session.exerciseLogs) {
-														const idx = exerciseLog.sets.findIndex((s) => s.id === set.id);
-														if (idx !== -1) {
-															exerciseLog.sets.splice(idx, 1);
-															exerciseLog.sets.forEach((s, i) => (s.setNumber = i + 1));
-															break;
-														}
-													}
-												} else {
-													await update();
-												}
-											};
-										}}
-									>
-										<input type="hidden" name="setLogId" value={set.id} />
-										<Button
-											type="submit"
-											variant="ghost"
-											size="icon-sm"
-											class="min-h-11 min-w-11 text-muted-foreground"
-											data-testid="remove-set-{set.id}"
-										>
-											&times;
-										</Button>
-									</form>
-								{:else}
-									<div class="w-8"></div>
-								{/if}
-							</div>
-						{/each}
-					</div>
-
-					{#if data.session.status === 'in_progress'}
-						<form
-							method="POST"
-							action="?/addSet"
-							use:enhance={() => {
-								return async ({ result, update }) => {
-									if (isNetworkError(result)) {
-										await queueAction('ADD_SET', {
-											exerciseLogId: log.id
-										});
-										const targetLog = data.session.exerciseLogs.find((l) => l.id === log.id);
-										if (targetLog) {
-											const lastSet = targetLog.sets[targetLog.sets.length - 1];
-											targetLog.sets.push({
-												id: -Date.now(),
-												exerciseLogId: log.id,
-												setNumber: targetLog.sets.length + 1,
-												weight: null,
-												reps: null,
-												unit: lastSet?.unit ?? 'kg',
-												createdAt: new Date()
-											});
-										}
-									} else {
-										await update();
-									}
-								};
-							}}
-							class="mt-2"
-						>
-							<input type="hidden" name="exerciseLogId" value={log.id} />
-							<Button
-								type="submit"
-								variant="ghost"
-								size="sm"
-								class="min-h-11 text-muted-foreground"
-								data-testid="add-set-{log.id}"
-							>
-								+ Add Set
-							</Button>
-						</form>
-					{/if}
-				{/if}
-			</div>
-		{/each}
-	</div>
-
 	{#if data.session.status === 'in_progress'}
-		<div class="flex justify-center pb-4">
-			<Button
-				variant="outline"
-				class="min-h-11 rounded-xl"
-				onclick={() => (adhocDialogOpen = true)}
-				data-testid="add-adhoc-btn"
-			>
-				+ Add Exercise
-			</Button>
-		</div>
+		<WorkoutWizard
+			exerciseLogs={data.session.exerciseLogs}
+			progressiveOverload={data.progressiveOverload}
+			onfinish={() => (stopDialogOpen = true)}
+			onaddexercise={() => (adhocDialogOpen = true)}
+		/>
 	{/if}
 </div>
 
@@ -426,7 +77,7 @@
 <AlertDialog bind:open={stopDialogOpen}>
 	<AlertDialogContent>
 		<AlertDialogHeader>
-			<AlertDialogTitle>Stop Workout?</AlertDialogTitle>
+			<AlertDialogTitle>Finish Workout?</AlertDialogTitle>
 			<AlertDialogDescription>
 				Exercises without logged sets will be marked as skipped.
 			</AlertDialogDescription>
@@ -460,7 +111,7 @@
 					disabled={stoppingWorkout}
 					data-testid="confirm-stop-btn"
 				>
-					{stoppingWorkout ? 'Stopping...' : 'Stop Workout'}
+					{stoppingWorkout ? 'Finishing...' : 'Finish Workout'}
 				</AlertDialogAction>
 			</form>
 		</AlertDialogFooter>

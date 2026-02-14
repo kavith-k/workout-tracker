@@ -3,8 +3,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Mock all query functions before importing the handler
 const mocks = {
 	updateSetLog: vi.fn(),
-	skipExercise: vi.fn(),
-	unskipExercise: vi.fn(),
 	completeWorkout: vi.fn(),
 	addAdhocExercise: vi.fn(),
 	addSetToExerciseLog: vi.fn(),
@@ -50,221 +48,107 @@ describe('sync endpoint input validation', () => {
 		});
 	});
 
-	describe('UPDATE_SET', () => {
+	describe('SAVE_EXERCISE', () => {
 		it('accepts valid payload', async () => {
-			const { status, body } = await callSync('UPDATE_SET', {
-				setLogId: 1,
-				weight: 80,
-				reps: 10,
-				unit: 'kg'
+			const { status, body } = await callSync('SAVE_EXERCISE', {
+				exerciseLogId: 1,
+				exerciseId: 5,
+				sets: [
+					{ setLogId: 1, weight: 80, reps: 10, unit: 'kg' },
+					{ setLogId: 2, weight: 85, reps: 8, unit: 'kg' }
+				]
 			});
 
 			expect(status).toBe(200);
 			expect(body.success).toBe(true);
-			expect(mocks.updateSetLog).toHaveBeenCalledOnce();
+			expect(mocks.updateSetLog).toHaveBeenCalledTimes(2);
 		});
 
-		it('rejects missing setLogId', async () => {
-			const { status, body } = await callSync('UPDATE_SET', { weight: 80 });
-
-			expect(status).toBe(400);
-			expect(body.error).toMatch(/setLogId/);
-			expect(mocks.updateSetLog).not.toHaveBeenCalled();
-		});
-
-		it('rejects non-integer setLogId', async () => {
-			const { status, body } = await callSync('UPDATE_SET', { setLogId: 1.5 });
-
-			expect(status).toBe(400);
-			expect(body.error).toMatch(/setLogId/);
-		});
-
-		it('rejects negative setLogId', async () => {
-			const { status, body } = await callSync('UPDATE_SET', { setLogId: -1 });
-
-			expect(status).toBe(400);
-			expect(body.error).toMatch(/setLogId/);
-		});
-
-		it('rejects zero setLogId', async () => {
-			const { status, body } = await callSync('UPDATE_SET', { setLogId: 0 });
-
-			expect(status).toBe(400);
-			expect(body.error).toMatch(/setLogId/);
-		});
-
-		it('rejects string setLogId', async () => {
-			const { status, body } = await callSync('UPDATE_SET', { setLogId: 'abc' });
-
-			expect(status).toBe(400);
-			expect(body.error).toMatch(/setLogId/);
-		});
-
-		it('rejects negative weight', async () => {
-			const { status, body } = await callSync('UPDATE_SET', {
-				setLogId: 1,
-				weight: -5
+		it('rejects missing exerciseLogId', async () => {
+			const { status, body } = await callSync('SAVE_EXERCISE', {
+				sets: [{ setLogId: 1, weight: 80, reps: 10, unit: 'kg' }]
 			});
 
 			expect(status).toBe(400);
-			expect(body.error).toMatch(/weight/);
+			expect(body.error).toMatch(/exerciseLogId/);
 		});
 
-		it('rejects string weight', async () => {
-			const { status, body } = await callSync('UPDATE_SET', {
-				setLogId: 1,
-				weight: 'heavy'
+		it('rejects missing sets', async () => {
+			const { status, body } = await callSync('SAVE_EXERCISE', {
+				exerciseLogId: 1
 			});
 
 			expect(status).toBe(400);
-			expect(body.error).toMatch(/weight/);
+			expect(body.error).toMatch(/sets/);
 		});
 
-		it('rejects boolean weight', async () => {
-			const { status, body } = await callSync('UPDATE_SET', {
-				setLogId: 1,
-				weight: true
+		it('rejects non-array sets', async () => {
+			const { status, body } = await callSync('SAVE_EXERCISE', {
+				exerciseLogId: 1,
+				sets: 'not-an-array'
 			});
 
 			expect(status).toBe(400);
-			expect(body.error).toMatch(/weight/);
+			expect(body.error).toMatch(/sets/);
 		});
 
-		it('accepts null weight (clearing a field)', async () => {
-			const { status, body } = await callSync('UPDATE_SET', {
-				setLogId: 1,
-				weight: null
-			});
-
-			expect(status).toBe(200);
-			expect(body.success).toBe(true);
-		});
-
-		it('accepts zero weight', async () => {
-			const { status, body } = await callSync('UPDATE_SET', {
-				setLogId: 1,
-				weight: 0
-			});
-
-			expect(status).toBe(200);
-			expect(body.success).toBe(true);
-		});
-
-		it('rejects negative reps', async () => {
-			const { status, body } = await callSync('UPDATE_SET', {
-				setLogId: 1,
-				reps: -1
-			});
-
-			expect(status).toBe(400);
-			expect(body.error).toMatch(/reps/);
-		});
-
-		it('rejects invalid unit', async () => {
-			const { status, body } = await callSync('UPDATE_SET', {
-				setLogId: 1,
-				unit: 'stones'
+		it('rejects invalid unit in set', async () => {
+			const { status, body } = await callSync('SAVE_EXERCISE', {
+				exerciseLogId: 1,
+				sets: [{ setLogId: 1, weight: 80, reps: 10, unit: 'stones' }]
 			});
 
 			expect(status).toBe(400);
 			expect(body.error).toMatch(/unit/);
 		});
 
-		it('accepts kg unit', async () => {
-			const { status, body } = await callSync('UPDATE_SET', {
-				setLogId: 1,
-				unit: 'kg'
+		it('skips placeholder sets with non-positive setLogId', async () => {
+			const { status, body } = await callSync('SAVE_EXERCISE', {
+				exerciseLogId: 1,
+				sets: [
+					{ setLogId: -1, weight: 80, reps: 10, unit: 'kg' },
+					{ setLogId: 2, weight: 85, reps: 8, unit: 'kg' }
+				]
 			});
 
 			expect(status).toBe(200);
 			expect(body.success).toBe(true);
+			// Only the set with positive ID should be processed
+			expect(mocks.updateSetLog).toHaveBeenCalledTimes(1);
 		});
 
-		it('accepts lbs unit', async () => {
-			const { status, body } = await callSync('UPDATE_SET', {
-				setLogId: 1,
-				unit: 'lbs'
-			});
-
-			expect(status).toBe(200);
-			expect(body.success).toBe(true);
-		});
-
-		it('rejects invalid exerciseId when provided', async () => {
-			const { status, body } = await callSync('UPDATE_SET', {
-				setLogId: 1,
-				exerciseId: -1
-			});
-
-			expect(status).toBe(400);
-			expect(body.error).toMatch(/exerciseId/);
-		});
-
-		it('updates exercise unit preference when unit and exerciseId given', async () => {
-			await callSync('UPDATE_SET', {
-				setLogId: 1,
-				unit: 'lbs',
-				exerciseId: 5
+		it('updates exercise unit preference when exerciseId given', async () => {
+			await callSync('SAVE_EXERCISE', {
+				exerciseLogId: 1,
+				exerciseId: 5,
+				sets: [{ setLogId: 1, weight: 80, reps: 10, unit: 'lbs' }]
 			});
 
 			expect(mocks.updateExerciseUnitPreference).toHaveBeenCalledWith(expect.anything(), 5, 'lbs');
 		});
 
 		it('does not update exercise unit preference without exerciseId', async () => {
-			await callSync('UPDATE_SET', {
-				setLogId: 1,
-				unit: 'lbs'
+			await callSync('SAVE_EXERCISE', {
+				exerciseLogId: 1,
+				sets: [{ setLogId: 1, weight: 80, reps: 10, unit: 'kg' }]
 			});
 
 			expect(mocks.updateExerciseUnitPreference).not.toHaveBeenCalled();
 		});
-	});
 
-	describe('SKIP_EXERCISE', () => {
-		it('accepts valid exerciseLogId', async () => {
-			const { status, body } = await callSync('SKIP_EXERCISE', { exerciseLogId: 1 });
-
-			expect(status).toBe(200);
-			expect(body.success).toBe(true);
-			expect(mocks.skipExercise).toHaveBeenCalledOnce();
-		});
-
-		it('rejects missing exerciseLogId', async () => {
-			const { status, body } = await callSync('SKIP_EXERCISE', {});
-
-			expect(status).toBe(400);
-			expect(body.error).toMatch(/exerciseLogId/);
-		});
-
-		it('rejects non-integer exerciseLogId', async () => {
-			const { status, body } = await callSync('SKIP_EXERCISE', { exerciseLogId: 2.5 });
-
-			expect(status).toBe(400);
-			expect(body.error).toMatch(/exerciseLogId/);
-		});
-
-		it('rejects string exerciseLogId', async () => {
-			const { status, body } = await callSync('SKIP_EXERCISE', { exerciseLogId: 'abc' });
-
-			expect(status).toBe(400);
-			expect(body.error).toMatch(/exerciseLogId/);
-		});
-	});
-
-	describe('UNSKIP_EXERCISE', () => {
-		it('accepts valid exerciseLogId', async () => {
-			const { status, body } = await callSync('UNSKIP_EXERCISE', { exerciseLogId: 3 });
+		it('handles null weight and reps', async () => {
+			const { status, body } = await callSync('SAVE_EXERCISE', {
+				exerciseLogId: 1,
+				sets: [{ setLogId: 1, weight: null, reps: null, unit: 'kg' }]
+			});
 
 			expect(status).toBe(200);
 			expect(body.success).toBe(true);
-			expect(mocks.unskipExercise).toHaveBeenCalledOnce();
-		});
-
-		it('rejects invalid exerciseLogId', async () => {
-			const { status, body } = await callSync('UNSKIP_EXERCISE', { exerciseLogId: 0 });
-
-			expect(status).toBe(400);
-			expect(body.error).toMatch(/exerciseLogId/);
+			expect(mocks.updateSetLog).toHaveBeenCalledWith(expect.anything(), 1, {
+				weight: null,
+				reps: null,
+				unit: 'kg'
+			});
 		});
 	});
 
@@ -406,50 +290,16 @@ describe('sync endpoint input validation', () => {
 		});
 	});
 
-	describe('UPDATE_UNIT', () => {
-		it('accepts valid payload', async () => {
-			const { status, body } = await callSync('UPDATE_UNIT', {
-				exerciseId: 1,
-				unit: 'lbs'
-			});
-
-			expect(status).toBe(200);
-			expect(body.success).toBe(true);
-			expect(mocks.updateExerciseUnitPreference).toHaveBeenCalledWith(expect.anything(), 1, 'lbs');
-		});
-
-		it('rejects missing exerciseId', async () => {
-			const { status, body } = await callSync('UPDATE_UNIT', { unit: 'kg' });
-
-			expect(status).toBe(400);
-			expect(body.error).toMatch(/exerciseId/);
-		});
-
-		it('rejects invalid unit', async () => {
-			const { status, body } = await callSync('UPDATE_UNIT', {
-				exerciseId: 1,
-				unit: 'stone'
-			});
-
-			expect(status).toBe(400);
-			expect(body.error).toMatch(/unit/);
-		});
-
-		it('rejects missing unit', async () => {
-			const { status, body } = await callSync('UPDATE_UNIT', { exerciseId: 1 });
-
-			expect(status).toBe(400);
-			expect(body.error).toMatch(/unit/);
-		});
-	});
-
 	describe('server error handling', () => {
 		it('returns 500 when query function throws', async () => {
-			mocks.skipExercise.mockImplementation(() => {
+			mocks.updateSetLog.mockImplementation(() => {
 				throw new Error('Database failure');
 			});
 
-			const { status, body } = await callSync('SKIP_EXERCISE', { exerciseLogId: 1 });
+			const { status, body } = await callSync('SAVE_EXERCISE', {
+				exerciseLogId: 1,
+				sets: [{ setLogId: 1, weight: 80, reps: 10, unit: 'kg' }]
+			});
 
 			expect(status).toBe(500);
 			expect(body.success).toBe(false);
