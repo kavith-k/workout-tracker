@@ -4,8 +4,6 @@ import { db } from '$lib/server/db';
 import {
 	getWorkoutSession,
 	updateSetLog,
-	skipExercise,
-	unskipExercise,
 	addAdhocExercise,
 	addSetToExerciseLog,
 	removeSetFromExerciseLog,
@@ -44,41 +42,51 @@ export const load: PageServerLoad = async ({ params }) => {
 };
 
 export const actions: Actions = {
-	updateSet: async ({ request }) => {
+	saveExercise: async ({ request }) => {
 		const formData = await request.formData();
-		const setLogId = Number(formData.get('setLogId'));
-		const weight = formData.get('weight');
-		const reps = formData.get('reps');
-		const unit = formData.get('unit') as 'kg' | 'lbs' | null;
+		const exerciseLogId = Number(formData.get('exerciseLogId'));
+		const exerciseId = Number(formData.get('exerciseId'));
+		const setsJson = formData.get('sets');
 
-		if (isNaN(setLogId)) return fail(400, { error: 'Invalid set ID' });
-
-		const data: { weight?: number | null; reps?: number | null; unit?: 'kg' | 'lbs' } = {};
-		if (weight !== null) data.weight = weight === '' ? null : Number(weight);
-		if (reps !== null) data.reps = reps === '' ? null : Number(reps);
-		if (unit) data.unit = unit;
-
-		updateSetLog(db, setLogId, data);
-
-		// Also update exercise unit preference if unit was changed
-		if (unit) {
-			const exerciseId = Number(formData.get('exerciseId'));
-			if (!isNaN(exerciseId) && exerciseId > 0) {
-				updateExerciseUnitPreference(db, exerciseId, unit);
-			}
+		if (isNaN(exerciseLogId)) return fail(400, { error: 'Invalid exercise log ID' });
+		if (!setsJson || typeof setsJson !== 'string') {
+			return fail(400, { error: 'Sets data is required' });
 		}
-	},
-	skip: async ({ request }) => {
-		const formData = await request.formData();
-		const exerciseLogId = Number(formData.get('exerciseLogId'));
-		if (isNaN(exerciseLogId)) return fail(400, { error: 'Invalid exercise log ID' });
-		skipExercise(db, exerciseLogId);
-	},
-	unskip: async ({ request }) => {
-		const formData = await request.formData();
-		const exerciseLogId = Number(formData.get('exerciseLogId'));
-		if (isNaN(exerciseLogId)) return fail(400, { error: 'Invalid exercise log ID' });
-		unskipExercise(db, exerciseLogId);
+
+		let sets: Array<{
+			setLogId: number;
+			weight: number | null;
+			reps: number | null;
+			unit: 'kg' | 'lbs';
+		}>;
+		try {
+			sets = JSON.parse(setsJson);
+		} catch {
+			return fail(400, { error: 'Invalid sets JSON' });
+		}
+
+		let unit: 'kg' | 'lbs' | undefined;
+		for (const set of sets) {
+			if (typeof set.setLogId === 'number' && set.setLogId < 0) continue; // skip offline placeholders
+			if (
+				typeof set.setLogId !== 'number' ||
+				!Number.isInteger(set.setLogId) ||
+				set.setLogId <= 0
+			) {
+				return fail(400, { error: 'set setLogId must be a positive integer' });
+			}
+			updateSetLog(db, set.setLogId, {
+				weight: set.weight,
+				reps: set.reps,
+				unit: set.unit
+			});
+			unit = set.unit;
+		}
+
+		// Update exercise unit preference if we have a valid exerciseId
+		if (unit && !isNaN(exerciseId) && exerciseId > 0) {
+			updateExerciseUnitPreference(db, exerciseId, unit);
+		}
 	},
 	addAdhoc: async ({ request }) => {
 		const formData = await request.formData();

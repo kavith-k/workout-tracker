@@ -54,7 +54,7 @@
 			Appearance
 		</h2>
 		<div class="glass-card overflow-hidden">
-			<div class="flex min-h-[44px] items-center justify-between px-4 py-3">
+			<div class="flex min-h-11 items-center justify-between px-4 py-3">
 				<span>Theme</span>
 				<div class="flex rounded-lg bg-muted p-0.5">
 					<button
@@ -96,14 +96,14 @@
 		<div class="glass-card overflow-hidden">
 			<a
 				href={resolve('/settings/export/json')}
-				class="flex min-h-[44px] items-center border-b border-border/40 px-4 py-3 last:border-b-0 active:bg-muted/60"
+				class="flex min-h-11 items-center border-b border-border/40 px-4 py-3 last:border-b-0 active:bg-muted/60"
 				data-testid="export-json-btn"
 			>
 				<span class="min-w-0 flex-1">Export as JSON</span>
 			</a>
 			<a
 				href={resolve('/settings/export/csv')}
-				class="flex min-h-[44px] items-center border-b border-border/40 px-4 py-3 last:border-b-0 active:bg-muted/60"
+				class="flex min-h-11 items-center border-b border-border/40 px-4 py-3 last:border-b-0 active:bg-muted/60"
 				data-testid="export-csv-btn"
 			>
 				<span class="min-w-0 flex-1">Export as CSV</span>
@@ -116,7 +116,7 @@
 			<h2 class="pb-1.5 text-sm font-medium tracking-wide text-muted-foreground uppercase">
 				Import Program
 			</h2>
-			<p class="text-sm text-muted-foreground">Upload a JSON file to create a new program.</p>
+			<p class="text-sm text-muted-foreground">Upload a JSON file to import a program.</p>
 		</div>
 
 		{#if uploadError || form?.error}
@@ -142,7 +142,7 @@
 
 		<div class="glass-card overflow-hidden">
 			<button
-				class="flex min-h-[44px] w-full items-center px-4 py-3 text-left active:bg-muted/60"
+				class="flex min-h-11 w-full items-center px-4 py-3 text-left active:bg-muted/60"
 				data-testid="upload-program-btn"
 				onclick={() => fileInput?.click()}
 			>

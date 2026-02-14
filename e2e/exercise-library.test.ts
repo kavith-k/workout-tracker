@@ -73,8 +73,9 @@ test.describe.serial('Exercise Library', () => {
 		// Delete dialog should appear — no workout history so should not mention it
 		const dialogDescription = page.locator('[role="alertdialog"]');
 		await expect(dialogDescription).toBeVisible();
-		await expect(dialogDescription).toContainText('Are you sure you want to delete');
-		await expect(dialogDescription).not.toContainText('workout history');
+		await expect(dialogDescription).toContainText('will be removed from any programs');
+		await expect(dialogDescription).toContainText('cannot be undone');
+		await expect(dialogDescription).not.toContainText('History will be kept');
 
 		// Confirm delete
 		await page.getByRole('button', { name: 'Delete' }).click();

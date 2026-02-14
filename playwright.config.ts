@@ -5,7 +5,7 @@ export default defineConfig({
 	webServer: {
 		command: 'npm run build && npm run preview',
 		port: 4173,
-		env: { DATABASE_PATH: './data/e2e-test.db' }
+		reuseExistingServer: false
 	},
 	testDir: 'e2e',
 	projects: [

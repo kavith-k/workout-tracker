@@ -23,9 +23,7 @@
 			class="rounded-2xl border border-neon/20 bg-neon/10 p-4"
 			data-testid="workout-in-progress-notice"
 		>
-			<p class="text-sm font-medium text-neon">
-				A workout is already in progress. Please finish or stop it before starting a new one.
-			</p>
+			<p class="text-sm font-medium text-neon">A workout is already in progress.</p>
 			<Button
 				href="/workout/{data.inProgressWorkout.id}"
 				variant="outline"
@@ -41,9 +39,7 @@
 			class="flex flex-col items-center justify-center gap-3 py-16 text-center"
 			data-testid="no-active-program"
 		>
-			<p class="text-muted-foreground">
-				No active program. Set a program as active to start working out.
-			</p>
+			<p class="text-muted-foreground">No active program. Set one in Programs to start.</p>
 			<Button href="/programs" class="min-h-[44px] rounded-xl">Go to Programs</Button>
 		</div>
 	{:else}

@@ -38,7 +38,9 @@ test.describe.serial('Workout Flow', () => {
 		await expect(page.getByText('3 exercises')).toBeVisible();
 	});
 
-	test('full workout flow: start, log, skip, add adhoc, stop, summary', async ({ page }) => {
+	test('full workout flow: wizard navigation, log, skip, add adhoc, finish, summary', async ({
+		page
+	}) => {
 		await page.goto('/');
 
 		// Start workout
@@ -46,75 +48,100 @@ test.describe.serial('Workout Flow', () => {
 		await expect(page.getByTestId('workout-title')).toContainText('Push Day');
 		await expect(page.getByText('Workout Test Program')).toBeVisible();
 
-		// Should see all exercise cards
-		const exerciseHeadings = page.locator('h3[data-testid^="exercise-name-"]');
-		await expect(exerciseHeadings).toHaveCount(3);
-		await expect(exerciseHeadings.filter({ hasText: 'Bench Press' })).toBeVisible();
-		await expect(exerciseHeadings.filter({ hasText: 'Overhead Press' })).toBeVisible();
-		await expect(exerciseHeadings.filter({ hasText: 'Tricep Dips' })).toBeVisible();
+		// Should see the wizard with first exercise (Bench Press)
+		await expect(page.getByTestId('exercise-step')).toBeVisible();
+		await expect(page.getByTestId('exercise-step-name')).toContainText('Bench Press');
 
-		// Log sets for Bench Press (first exercise)
-		const exerciseCards = page.locator('[id^="exercise-log-"]');
-		const benchCard = exerciseCards.first();
+		// Should see progress bar with 3 circles
+		await expect(page.getByTestId('wizard-progress-bar')).toBeVisible();
+		await expect(page.getByTestId('progress-circle-0')).toBeVisible();
+		await expect(page.getByTestId('progress-circle-1')).toBeVisible();
+		await expect(page.getByTestId('progress-circle-2')).toBeVisible();
 
-		// Fill both inputs before triggering a single form submission
-		await benchCard.locator('input[name="weight"]').first().fill('80');
-		await benchCard.locator('input[name="reps"]').first().fill('8');
-		await benchCard
-			.locator('input[name="reps"]')
-			.first()
-			.evaluate((el: HTMLInputElement) => el.dispatchEvent(new Event('change', { bubbles: true })));
+		// Should see Skip button (no reps filled yet)
+		await expect(page.getByTestId('wizard-next-btn')).toContainText('Skip');
 
-		// Log sets for Overhead Press (second exercise)
-		const ohpCard = exerciseCards.nth(1);
+		// Log sets for Bench Press
+		await page.getByTestId('weight-input-0').fill('80');
+		await page.getByTestId('reps-input-0').fill('8');
+		// Trigger change events
+		await page.getByTestId('reps-input-0').blur();
 
-		await ohpCard.locator('input[name="weight"]').first().fill('40');
-		await ohpCard.locator('input[name="reps"]').first().fill('10');
-		await ohpCard
-			.locator('input[name="reps"]')
-			.first()
-			.evaluate((el: HTMLInputElement) => el.dispatchEvent(new Event('change', { bubbles: true })));
+		// Button should now show "Next" since reps are filled
+		await expect(page.getByTestId('wizard-next-btn')).toContainText('Next');
 
-		// Skip Tricep Dips (third exercise)
-		const tricepCard = exerciseCards.nth(2);
-		await tricepCard.getByRole('button', { name: 'Skip' }).click();
-		await expect(tricepCard.getByRole('button', { name: 'Unskip' })).toBeVisible();
+		// Click Next to save and advance
+		await page.getByTestId('wizard-next-btn').click();
 
-		// Unskip Tricep Dips
-		await tricepCard.getByRole('button', { name: 'Unskip' }).click();
-		await expect(tricepCard.getByRole('button', { name: 'Skip' })).toBeVisible();
+		// Should now be on exercise 2 (Overhead Press)
+		await expect(page.getByTestId('exercise-step-name')).toContainText('Overhead Press');
 
-		// Skip it again (leave it skipped for stop)
-		await tricepCard.getByRole('button', { name: 'Skip' }).click();
+		// Should have Previous button
+		await expect(page.getByTestId('wizard-previous-btn')).toBeVisible();
+
+		// Log sets for OHP
+		await page.getByTestId('weight-input-0').fill('40');
+		await page.getByTestId('reps-input-0').fill('10');
+		await page.getByTestId('reps-input-0').blur();
+
+		// Click Next to save and advance to Tricep Dips
+		await page.getByTestId('wizard-next-btn').click();
+
+		// Should now be on exercise 3 (Tricep Dips) -- last exercise
+		await expect(page.getByTestId('exercise-step-name')).toContainText('Tricep Dips');
+
+		// Last exercise shows Previous, Add Exercise, and Finish buttons
+		await expect(page.getByTestId('wizard-previous-btn')).toBeVisible();
+		await expect(page.getByTestId('wizard-add-exercise-btn')).toBeVisible();
+		await expect(page.getByTestId('wizard-finish-btn')).toBeVisible();
 
 		// Add an ad-hoc exercise
-		await page.getByTestId('add-adhoc-btn').click();
+		await page.getByTestId('wizard-add-exercise-btn').click();
 		await expect(page.getByRole('heading', { name: 'Add Exercise' })).toBeVisible();
 		await page.getByTestId('adhoc-exercise-input').fill('Lateral Raise');
 		await page.getByTestId('adhoc-submit-btn').click();
 
-		// Verify ad-hoc exercise appears (check via heading to avoid navigator duplicate)
-		await expect(exerciseHeadings.filter({ hasText: 'Lateral Raise' })).toBeVisible();
+		// Wait for the dialog to close and progress bar to update
+		await expect(page.getByTestId('progress-circle-3')).toBeVisible();
+
+		// Tricep Dips is no longer the last exercise -- should show Next/Skip now
+		await expect(page.getByTestId('wizard-next-btn')).toBeVisible();
+
+		// Skip Tricep Dips (no reps filled)
+		await page.getByTestId('wizard-next-btn').click();
+
+		// Should be on Lateral Raise (exercise 4, the last exercise)
+		await expect(page.getByTestId('exercise-step-name')).toContainText('Lateral Raise');
 		await expect(page.getByText('Ad-hoc')).toBeVisible();
+
+		// Test jumping via progress bar -- jump back to Bench Press
+		await page.getByTestId('progress-circle-0').click();
+		await expect(page.getByTestId('exercise-step-name')).toContainText('Bench Press');
 
 		// Verify data persists after reload
 		await page.reload();
-		await expect(benchCard.locator('input[name="weight"]').first()).toHaveValue('80');
-		await expect(benchCard.locator('input[name="reps"]').first()).toHaveValue('8');
+		await expect(page.getByTestId('exercise-step-name')).toContainText('Bench Press');
+		await expect(page.getByTestId('weight-input-0')).toHaveValue('80');
+		await expect(page.getByTestId('reps-input-0')).toHaveValue('8');
 
-		// Stop workout
-		await page.getByTestId('stop-workout-btn').click();
-		await expect(page.getByText('Stop Workout?')).toBeVisible();
+		// Navigate to last exercise to finish
+		const progressCircles = await page.getByTestId('wizard-progress-bar').locator('button').count();
+		await page.getByTestId(`progress-circle-${progressCircles - 1}`).click();
+		await expect(page.getByTestId('wizard-finish-btn')).toBeVisible();
+
+		// Finish workout
+		await page.getByTestId('wizard-finish-btn').click();
+		await expect(page.getByText('Finish Workout?')).toBeVisible();
 		await page.getByTestId('confirm-stop-btn').click();
 
 		// Verify summary
 		await expect(page.getByTestId('workout-summary')).toBeVisible();
 		await expect(page.getByText('Workout Complete')).toBeVisible();
-		await expect(page.getByTestId('exercise-count')).toBeVisible();
+		await expect(page.getByTestId('stat-exercises')).toBeVisible();
 
-		// 2/3 completed (Bench Press + OHP, Tricep Dips was skipped)
-		await expect(page.getByTestId('exercise-count')).toContainText('2/3');
-		await expect(page.getByText('1 skipped')).toBeVisible();
+		// 2/3 completed (Bench Press + OHP completed, Tricep Dips was skipped)
+		await expect(page.getByTestId('stat-exercises')).toContainText('2/3');
+		await expect(page.getByTestId('skipped-count')).toContainText('1 exercise skipped');
 
 		// PRs should be detected (first workout ever for these exercises)
 		await expect(page.getByTestId('pr-list')).toBeVisible();
@@ -141,7 +168,7 @@ test.describe.serial('Workout Flow', () => {
 		// Day buttons should be disabled
 		await expect(page.getByRole('button', { name: 'Push Day' })).toBeDisabled();
 
-		// Navigate to programs page — resume banner should appear
+		// Navigate to programs page -- resume banner should appear
 		await page.goto('/programs');
 		await expect(page.getByTestId('resume-workout-banner')).toBeVisible();
 		await expect(page.getByText('Workout in progress: Push Day')).toBeVisible();
@@ -150,8 +177,11 @@ test.describe.serial('Workout Flow', () => {
 		await page.getByRole('link', { name: 'Resume' }).click();
 		await expect(page.getByTestId('workout-title')).toContainText('Push Day');
 
-		// Stop this workout for cleanup
-		await page.getByTestId('stop-workout-btn').click();
+		// Finish this workout via wizard
+		// Navigate to last exercise
+		const circleCount = await page.getByTestId('wizard-progress-bar').locator('button').count();
+		await page.getByTestId(`progress-circle-${circleCount - 1}`).click();
+		await page.getByTestId('wizard-finish-btn').click();
 		await page.getByTestId('confirm-stop-btn').click();
 		await expect(page.getByTestId('workout-summary')).toBeVisible();
 	});
@@ -163,29 +193,31 @@ test.describe.serial('Workout Flow', () => {
 		await page.getByRole('button', { name: 'Push Day' }).click();
 		await expect(page.getByTestId('workout-title')).toBeVisible();
 
-		// Log at least one set for every planned exercise
-		const exerciseCards = page.locator('[id^="exercise-log-"]');
-		const count = await exerciseCards.count();
+		// Log at least one set for every planned exercise using wizard navigation
+		const circleCount = await page.getByTestId('wizard-progress-bar').locator('button').count();
 
-		for (let i = 0; i < count; i++) {
-			const card = exerciseCards.nth(i);
-			const weightInput = card.locator('input[name="weight"]').first();
-			const repsInput = card.locator('input[name="reps"]').first();
+		for (let i = 0; i < circleCount; i++) {
+			if (i > 0) {
+				// We should already be on the next exercise after clicking Next
+			}
 
-			await weightInput.fill(String(50 + i * 10));
-			await repsInput.fill('10');
-			await repsInput.evaluate((el: HTMLInputElement) =>
-				el.dispatchEvent(new Event('change', { bubbles: true }))
-			);
+			await page.getByTestId('weight-input-0').fill(String(50 + i * 10));
+			await page.getByTestId('reps-input-0').fill('10');
+			await page.getByTestId('reps-input-0').blur();
+
+			if (i < circleCount - 1) {
+				// Click Next for non-last exercises
+				await page.getByTestId('wizard-next-btn').click();
+			}
 		}
 
-		// Stop workout
-		await page.getByTestId('stop-workout-btn').click();
+		// Finish workout from the last exercise
+		await page.getByTestId('wizard-finish-btn').click();
 		await page.getByTestId('confirm-stop-btn').click();
 
 		// Should see congratulatory message (3/3 exercises completed)
 		await expect(page.getByTestId('congrats-message')).toBeVisible();
-		await expect(page.getByText('All exercises completed')).toBeVisible();
+		await expect(page.getByText('All exercises completed. Great work.')).toBeVisible();
 	});
 
 	test('shows last workout info on home screen', async ({ page }) => {

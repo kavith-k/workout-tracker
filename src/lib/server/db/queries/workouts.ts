@@ -36,6 +36,9 @@ export type WorkoutSummary = {
 	totalExercises: number;
 	completedExercises: number;
 	skippedExercises: number;
+	totalSets: number;
+	totalVolume: number;
+	durationMinutes: number | null;
 	prs: Array<{ exerciseName: string; weight: number; reps: number; unit: string }>;
 };
 
@@ -287,6 +290,34 @@ export function getWorkoutSummary(db: Db, sessionId: number): WorkoutSummary | n
 	const skippedExercises = logs.filter((l) => l.status === 'skipped' && !l.isAdhoc).length;
 	const completedExercises = totalExercises - skippedExercises;
 
+	// Compute total sets and volume across all logged exercises (including ad-hoc)
+	const allSets = db
+		.select()
+		.from(setLogs)
+		.innerJoin(exerciseLogs, eq(setLogs.exerciseLogId, exerciseLogs.id))
+		.where(
+			and(
+				eq(exerciseLogs.sessionId, sessionId),
+				eq(exerciseLogs.status, 'logged'),
+				isNotNull(setLogs.weight)
+			)
+		)
+		.all();
+
+	const LBS_TO_KG = 0.453592;
+	const totalSets = allSets.length;
+	const totalVolume = allSets.reduce((sum, row) => {
+		const weight = row.set_logs.weight ?? 0;
+		const reps = row.set_logs.reps ?? 0;
+		const weightKg = row.set_logs.unit === 'lbs' ? weight * LBS_TO_KG : weight;
+		return sum + weightKg * reps;
+	}, 0);
+
+	const durationMinutes =
+		session.completedAt && session.startedAt
+			? Math.round((session.completedAt.getTime() - session.startedAt.getTime()) / (1000 * 60))
+			: null;
+
 	// Detect PRs: for each logged exercise, check if any set in this session
 	// has a higher weight than any previous session
 	const prs: WorkoutSummary['prs'] = [];
@@ -345,6 +376,9 @@ export function getWorkoutSummary(db: Db, sessionId: number): WorkoutSummary | n
 		totalExercises,
 		completedExercises,
 		skippedExercises,
+		totalSets,
+		totalVolume,
+		durationMinutes,
 		prs
 	};
 }
