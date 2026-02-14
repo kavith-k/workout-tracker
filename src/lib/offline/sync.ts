@@ -11,34 +11,38 @@ export async function syncQueue(): Promise<void> {
 	if (queue.length === 0) return;
 
 	offlineState.isSyncing = true;
-	await updatePendingCount();
 
-	for (const action of queue) {
-		try {
-			const response = await fetch('/api/sync', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ action: action.action, payload: action.payload })
-			});
+	try {
+		await updatePendingCount();
 
-			if (response.ok) {
-				await removeFromQueue(action.id);
-			} else {
+		for (const action of queue) {
+			try {
+				const response = await fetch('/api/sync', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ action: action.action, payload: action.payload })
+				});
+
+				if (response.ok) {
+					await removeFromQueue(action.id);
+				} else {
+					const retries = await incrementRetryCount(action.id);
+					if (retries > MAX_RETRY_COUNT) {
+						await removeFromQueue(action.id);
+					}
+				}
+			} catch {
 				const retries = await incrementRetryCount(action.id);
 				if (retries > MAX_RETRY_COUNT) {
 					await removeFromQueue(action.id);
 				}
 			}
-		} catch {
-			const retries = await incrementRetryCount(action.id);
-			if (retries > MAX_RETRY_COUNT) {
-				await removeFromQueue(action.id);
-			}
+			await updatePendingCount();
 		}
-		await updatePendingCount();
+	} finally {
+		offlineState.isSyncing = false;
 	}
 
-	offlineState.isSyncing = false;
 	await updatePendingCount();
 }
 

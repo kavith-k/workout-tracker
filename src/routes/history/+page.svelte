@@ -49,20 +49,6 @@
 <div class="space-y-6">
 	<h1 class="text-3xl font-bold tracking-tight">History</h1>
 
-	<div class="flex rounded-xl bg-card p-1" data-testid="view-toggle">
-		<span
-			class="flex min-h-[36px] flex-1 items-center justify-center rounded-lg bg-neon px-3 text-sm font-medium text-neon-foreground"
-		>
-			By Date
-		</span>
-		<a
-			href={resolve('/history/by-exercise')}
-			class="flex min-h-[36px] flex-1 items-center justify-center rounded-lg px-3 text-sm font-medium text-muted-foreground"
-		>
-			By Exercise
-		</a>
-	</div>
-
 	{#if form?.error}
 		<div
 			class="rounded-2xl bg-destructive/10 p-3 text-sm text-destructive"
@@ -77,9 +63,7 @@
 			class="flex flex-col items-center justify-center gap-3 py-16 text-center"
 			data-testid="empty-state"
 		>
-			<p class="text-muted-foreground">
-				No workout history yet. Complete a workout to see it here.
-			</p>
+			<p class="text-muted-foreground">No workout history yet.</p>
 		</div>
 	{:else}
 		<div class="glass-card overflow-hidden">
@@ -145,8 +129,7 @@
 		<AlertDialogHeader>
 			<AlertDialogTitle>Delete Workout</AlertDialogTitle>
 			<AlertDialogDescription>
-				Are you sure you want to delete this "{deleteTargetDay}" workout? This action cannot be
-				undone.
+				Delete this "{deleteTargetDay}" workout? This cannot be undone.
 			</AlertDialogDescription>
 		</AlertDialogHeader>
 		<AlertDialogFooter>

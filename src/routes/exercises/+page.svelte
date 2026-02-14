@@ -93,9 +93,7 @@
 			class="flex flex-col items-center justify-center gap-3 py-16 text-center"
 			data-testid="empty-state"
 		>
-			<p class="text-muted-foreground">
-				No exercises yet. Exercises are added automatically when you create programs.
-			</p>
+			<p class="text-muted-foreground">No exercises yet. Create a program to add some.</p>
 			<Button href="/programs" class="rounded-xl">Go to Programs</Button>
 		</div>
 	{:else}
@@ -166,11 +164,10 @@
 			<AlertDialogTitle>Delete Exercise</AlertDialogTitle>
 			<AlertDialogDescription>
 				{#if deleteTargetHasHistory}
-					This exercise has workout history. The history will be kept but "{deleteTargetName}" will
-					be removed from the library and any programs using it.
+					History will be kept, but "{deleteTargetName}" will be removed from the library and any
+					programs.
 				{:else}
-					Are you sure you want to delete "{deleteTargetName}"? It will be removed from any programs
-					using it. This action cannot be undone.
+					"{deleteTargetName}" will be removed from any programs. This cannot be undone.
 				{/if}
 			</AlertDialogDescription>
 		</AlertDialogHeader>

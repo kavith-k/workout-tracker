@@ -40,7 +40,10 @@ export default defineConfig({
 				]
 			},
 			workbox: {
-				globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+				globPatterns: ['client/**/*.{js,css,html,ico,png,svg,woff2,webmanifest}'],
+				modifyURLPrefix: {
+					'client/': ''
+				},
 				navigateFallback: '/'
 			},
 			devOptions: {

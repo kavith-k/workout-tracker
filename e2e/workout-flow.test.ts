@@ -60,20 +60,37 @@ test.describe.serial('Workout Flow', () => {
 		// Fill both inputs before triggering a single form submission
 		await benchCard.locator('input[name="weight"]').first().fill('80');
 		await benchCard.locator('input[name="reps"]').first().fill('8');
-		await benchCard
-			.locator('input[name="reps"]')
-			.first()
-			.evaluate((el: HTMLInputElement) => el.dispatchEvent(new Event('change', { bubbles: true })));
+		await Promise.all([
+			page.waitForResponse((resp) => resp.request().method() === 'POST' && resp.ok()),
+			benchCard
+				.locator('input[name="reps"]')
+				.first()
+				.evaluate((el: HTMLInputElement) =>
+					el.dispatchEvent(new Event('change', { bubbles: true }))
+				)
+		]);
+
+		// Wait for SvelteKit's update cycle to complete before filling next exercise,
+		// otherwise the re-render from bench's update() resets OHP input values
+		await expect(benchCard.locator('input[name="weight"]').first()).toHaveValue('80');
 
 		// Log sets for Overhead Press (second exercise)
 		const ohpCard = exerciseCards.nth(1);
 
 		await ohpCard.locator('input[name="weight"]').first().fill('40');
 		await ohpCard.locator('input[name="reps"]').first().fill('10');
-		await ohpCard
-			.locator('input[name="reps"]')
-			.first()
-			.evaluate((el: HTMLInputElement) => el.dispatchEvent(new Event('change', { bubbles: true })));
+		await Promise.all([
+			page.waitForResponse((resp) => resp.request().method() === 'POST' && resp.ok()),
+			ohpCard
+				.locator('input[name="reps"]')
+				.first()
+				.evaluate((el: HTMLInputElement) =>
+					el.dispatchEvent(new Event('change', { bubbles: true }))
+				)
+		]);
+
+		// Wait for OHP update cycle to complete
+		await expect(ohpCard.locator('input[name="weight"]').first()).toHaveValue('40');
 
 		// Skip Tricep Dips (third exercise)
 		const tricepCard = exerciseCards.nth(2);
@@ -110,11 +127,11 @@ test.describe.serial('Workout Flow', () => {
 		// Verify summary
 		await expect(page.getByTestId('workout-summary')).toBeVisible();
 		await expect(page.getByText('Workout Complete')).toBeVisible();
-		await expect(page.getByTestId('exercise-count')).toBeVisible();
+		await expect(page.getByTestId('stat-exercises')).toBeVisible();
 
 		// 2/3 completed (Bench Press + OHP, Tricep Dips was skipped)
-		await expect(page.getByTestId('exercise-count')).toContainText('2/3');
-		await expect(page.getByText('1 skipped')).toBeVisible();
+		await expect(page.getByTestId('stat-exercises')).toContainText('2/3');
+		await expect(page.getByTestId('skipped-count')).toContainText('1 exercise skipped');
 
 		// PRs should be detected (first workout ever for these exercises)
 		await expect(page.getByTestId('pr-list')).toBeVisible();
@@ -185,7 +202,7 @@ test.describe.serial('Workout Flow', () => {
 
 		// Should see congratulatory message (3/3 exercises completed)
 		await expect(page.getByTestId('congrats-message')).toBeVisible();
-		await expect(page.getByText('All exercises completed')).toBeVisible();
+		await expect(page.getByText('All exercises completed. Great work.')).toBeVisible();
 	});
 
 	test('shows last workout info on home screen', async ({ page }) => {

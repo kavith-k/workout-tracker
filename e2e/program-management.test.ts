@@ -153,10 +153,12 @@ test.describe.serial('Program Management', () => {
 		await page.getByRole('menuitem', { name: 'Delete' }).click();
 
 		// Delete confirmation dialog should appear
-		await expect(page.getByText('Are you sure you want to delete')).toBeVisible();
+		const deleteDialog = page.locator('[role="alertdialog"]');
+		await expect(deleteDialog).toBeVisible();
+		await expect(deleteDialog).toContainText('cannot be undone');
 
 		// Confirm delete
-		await page.getByRole('button', { name: 'Delete' }).click();
+		await deleteDialog.getByRole('button', { name: 'Delete' }).click();
 
 		// Program count should decrease
 		await expect(page.locator('[data-testid="program-card"]')).toHaveCount(cardsBefore - 1);

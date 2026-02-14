@@ -1,11 +1,10 @@
 import { expect, test } from '@playwright/test';
 
 test.describe.serial('History', () => {
-	test('shows history by date with completed workouts', async ({ page }) => {
+	test('shows history with completed workouts', async ({ page }) => {
 		await page.goto('/history');
 
 		await expect(page.getByRole('heading', { name: 'History' })).toBeVisible();
-		await expect(page.getByTestId('view-toggle')).toBeVisible();
 
 		// Should have session cards from previous workout-flow tests
 		const sessionCards = page.getByTestId('session-card');
@@ -31,30 +30,6 @@ test.describe.serial('History', () => {
 
 		// Should have at least one skipped badge
 		await expect(page.getByText('Skipped').first()).toBeVisible();
-	});
-
-	test('toggles between by-date and by-exercise views', async ({ page }) => {
-		await page.goto('/history');
-
-		await expect(page.getByTestId('view-toggle')).toBeVisible();
-
-		// Click "By Exercise" to switch views
-		await page.getByText('By Exercise').click();
-		await expect(page).toHaveURL('/history/by-exercise');
-
-		// Should show exercise history items
-		const exerciseItems = page.getByTestId('exercise-history-item');
-		const count = await exerciseItems.count();
-		expect(count).toBeGreaterThan(0);
-
-		// Each item should show session count
-		await expect(exerciseItems.first().getByTestId('exercise-session-count')).toBeVisible();
-		await expect(exerciseItems.first().getByTestId('exercise-last-performed')).toBeVisible();
-
-		// Click "By Date" to switch back
-		await page.getByText('By Date').click();
-		await expect(page).toHaveURL('/history');
-		await expect(page.getByTestId('session-card').first()).toBeVisible();
 	});
 
 	test('views session detail with exercise logs and sets', async ({ page }) => {
@@ -128,20 +103,5 @@ test.describe.serial('History', () => {
 
 		// Wait for the session to be removed (use auto-retrying assertion)
 		await expect(sessionCards).toHaveCount(countBefore - 1);
-	});
-
-	test('deleted data no longer appears in by-exercise view', async ({ page }) => {
-		// Navigate to by-exercise view to verify consistency after deletions
-		await page.goto('/history/by-exercise');
-
-		// The view should still work and show exercises
-		await expect(page.getByTestId('view-toggle')).toBeVisible();
-
-		// Exercise items should have valid session counts
-		const exerciseItems = page.getByTestId('exercise-history-item');
-		const count = await exerciseItems.count();
-		if (count > 0) {
-			await expect(exerciseItems.first().getByTestId('exercise-session-count')).toBeVisible();
-		}
 	});
 });

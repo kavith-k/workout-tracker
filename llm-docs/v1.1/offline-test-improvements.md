@@ -1,6 +1,12 @@
-# Offline Feature: Test Gaps
+# Offline Feature: Test Gaps [RESOLVED]
 
-Three areas of the Phase 10 offline implementation have no automated test coverage. Each section describes what is untested and why it matters.
+All three gaps below have been addressed. Tests added in `src/routes/api/sync/server.test.ts` and `src/lib/offline/sync.test.ts`. The `isSyncing` crash bug (section 3) was also fixed with a try/finally wrapper in `src/lib/offline/sync.ts`.
+
+---
+
+*Original problem statements preserved below for reference.*
+
+Three areas of the Phase 10 offline implementation had no automated test coverage. Each section describes what was untested and why it matters.
 
 ---
 

@@ -72,7 +72,7 @@
 
 	{#if data.programs.length === 0}
 		<div class="flex flex-col items-center justify-center gap-3 py-16 text-center">
-			<p class="text-muted-foreground">No programs yet. Create your first workout program.</p>
+			<p class="text-muted-foreground">No programs yet.</p>
 			<Button href="/programs/new" class="rounded-xl">
 				<Plus class="size-4" />
 				Create Program
@@ -152,7 +152,7 @@
 		<AlertDialogHeader>
 			<AlertDialogTitle>Delete Program</AlertDialogTitle>
 			<AlertDialogDescription>
-				Are you sure you want to delete "{deleteTargetName}"? This action cannot be undone.
+				Delete "{deleteTargetName}"? This cannot be undone.
 			</AlertDialogDescription>
 		</AlertDialogHeader>
 		<AlertDialogFooter>

@@ -116,7 +116,7 @@
 			<h2 class="pb-1.5 text-sm font-medium tracking-wide text-muted-foreground uppercase">
 				Import Program
 			</h2>
-			<p class="text-sm text-muted-foreground">Upload a JSON file to create a new program.</p>
+			<p class="text-sm text-muted-foreground">Upload a JSON file to import a program.</p>
 		</div>
 
 		{#if uploadError || form?.error}

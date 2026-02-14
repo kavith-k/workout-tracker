@@ -58,6 +58,32 @@
 	function formatPreviousSets(sets: Array<{ weight: number; reps: number; unit: string }>): string {
 		return sets.map((s) => `${s.weight}${s.unit} x ${s.reps}`).join(', ');
 	}
+
+	function getExerciseUnit(log: { sets: Array<{ unit: string }> }): string {
+		return log.sets[0]?.unit ?? 'kg';
+	}
+
+	function toggleExerciseUnit(log: {
+		id: number;
+		exerciseId: number | null;
+		sets: Array<{ id: number; unit: string }>;
+	}) {
+		const currentUnit = getExerciseUnit(log);
+		const newUnit = currentUnit === 'kg' ? 'lbs' : 'kg';
+
+		for (const set of log.sets) {
+			set.unit = newUnit;
+
+			const form = document.getElementById(`set-form-${set.id}`) as HTMLFormElement | null;
+			if (form) {
+				const unitInput = form.querySelector<HTMLInputElement>('input[name="unit"]');
+				if (unitInput) {
+					unitInput.value = newUnit;
+				}
+				form.requestSubmit();
+			}
+		}
+	}
 </script>
 
 <div class="space-y-4">
@@ -198,7 +224,21 @@
 							class="grid grid-cols-[2rem_1fr_1fr_auto] items-center gap-2 text-xs font-medium text-muted-foreground"
 						>
 							<span>Set</span>
-							<span>Weight</span>
+							<span class="flex items-center gap-1">
+								Weight
+								{#if data.session.status === 'in_progress'}
+									<button
+										type="button"
+										class="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+										onclick={() => toggleExerciseUnit(log)}
+										data-testid="unit-toggle-{log.id}"
+									>
+										{getExerciseUnit(log)}
+									</button>
+								{:else}
+									<span class="text-[10px]">({getExerciseUnit(log)})</span>
+								{/if}
+							</span>
 							<span>Reps</span>
 							<span></span>
 						</div>
@@ -258,43 +298,21 @@
 									<input type="hidden" name="setLogId" value={set.id} />
 									<input type="hidden" name="exerciseLogId" value={log.id} />
 									<input type="hidden" name="exerciseId" value={log.exerciseId} />
-									<div class="relative">
-										<Input
-											type="number"
-											name="weight"
-											value={set.weight ?? ''}
-											placeholder="0"
-											step="0.5"
-											min="0"
-											inputmode="decimal"
-											class="pr-8"
-											onchange={(e) => e.currentTarget.form?.requestSubmit()}
-											data-testid="weight-input-{set.id}"
-										/>
-										<button
-											type="button"
-											class="absolute top-1/2 right-0 flex min-h-[44px] min-w-[44px] -translate-y-1/2 items-center justify-center text-xs text-muted-foreground hover:text-foreground"
-											onclick={(e) => {
-												const form = e.currentTarget.closest('form');
-												if (!form) return;
-												const unitInput =
-													form.querySelector<HTMLInputElement>('input[name="unit"]');
-												if (unitInput) {
-													unitInput.value = unitInput.value === 'kg' ? 'lbs' : 'kg';
-													form.requestSubmit();
-												}
-											}}
-											data-testid="unit-toggle-{set.id}"
-										>
-											{set.unit}
-										</button>
-										<input type="hidden" name="unit" value={set.unit} />
-									</div>
+									<Input
+										type="number"
+										name="weight"
+										value={set.weight ?? ''}
+										step="0.5"
+										min="0"
+										inputmode="decimal"
+										onchange={(e) => e.currentTarget.form?.requestSubmit()}
+										data-testid="weight-input-{set.id}"
+									/>
+									<input type="hidden" name="unit" value={set.unit} />
 									<Input
 										type="number"
 										name="reps"
 										value={set.reps ?? ''}
-										placeholder="0"
 										min="0"
 										inputmode="numeric"
 										onchange={(e) => e.currentTarget.form?.requestSubmit()}
@@ -410,8 +428,7 @@
 		<AlertDialogHeader>
 			<AlertDialogTitle>Stop Workout?</AlertDialogTitle>
 			<AlertDialogDescription>
-				Any exercises without logged sets will be marked as skipped. You can review your summary
-				afterwards.
+				Exercises without logged sets will be marked as skipped.
 			</AlertDialogDescription>
 		</AlertDialogHeader>
 		<AlertDialogFooter>
@@ -455,10 +472,7 @@
 	<DialogContent>
 		<DialogHeader>
 			<DialogTitle>Add Exercise</DialogTitle>
-			<DialogDescription>
-				Add an extra exercise to this workout. If the exercise is new, it will be added to your
-				library.
-			</DialogDescription>
+			<DialogDescription>New exercises will be added to your library.</DialogDescription>
 		</DialogHeader>
 		<form
 			method="POST"

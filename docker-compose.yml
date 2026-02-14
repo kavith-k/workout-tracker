@@ -4,8 +4,6 @@ services:
     container_name: workout-tracker
     ports:
       - '6789:3000'
-    environment:
-      - DATABASE_PATH=/data/workout-tracker.db
     volumes:
       - docker-config/workout-tracker:/data
     restart: unless-stopped

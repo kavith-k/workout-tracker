@@ -4,7 +4,7 @@ import Database from 'better-sqlite3';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const DB_PATH = './data/e2e-test.db';
+const DB_PATH = './data/workout-tracker.db';
 
 export default function globalSetup() {
 	// Remove existing test database for a clean slate

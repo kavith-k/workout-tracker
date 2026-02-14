@@ -40,12 +40,6 @@ jobs:
 
       - name: Build
         run: npm run build
-        env:
-          DATABASE_PATH: ./data/build.db
 
       - name: E2E tests
-        run: |
-          mkdir -p data
-          npm run test:e2e
-        env:
-          DATABASE_PATH: ./data/test.db
+        run: npm run test:e2e

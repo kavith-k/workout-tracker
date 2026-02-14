@@ -30,11 +30,7 @@ npm run db:studio        # Open Drizzle Studio
 
 ## Environment
 
-Requires `DATABASE_PATH` env var. Copy `.env.example` to `.env` for local dev:
-
-```
-DATABASE_PATH=./data/workout-tracker.db
-```
+No environment variables required. The database is automatically created at `./data/workout-tracker.db` for local dev, or `/data/workout-tracker.db` when running in Docker (detected by the presence of `/data/`).
 
 ## Vitest Configuration
 
@@ -57,7 +53,7 @@ Any documentation written by agents must be clear, simple, and short. No unneces
 ## Architecture
 
 - **DB schema**: `src/lib/server/db/schema.ts` — Drizzle schema definition
-- **DB connection**: `src/lib/server/db/index.ts` — creates connection using `DATABASE_PATH`
+- **DB connection**: `src/lib/server/db/index.ts` — creates connection with auto-detected path
 - **Drizzle config**: `drizzle.config.ts` — migration config, schema path, SQLite dialect
 - **Shared utils**: `src/lib/utils.ts` — `cn()` helper for Tailwind class merging + shadcn type helpers
 - **Routes**: `src/routes/` — SvelteKit file-based routing

@@ -134,18 +134,16 @@
 
 					{#if log.status !== 'skipped' && log.sets.length > 0}
 						<div class="border-t border-border/40 px-4 py-3">
-							<div class="grid grid-cols-4 gap-2 text-xs font-medium text-muted-foreground">
+							<div class="grid grid-cols-3 gap-2 text-xs font-medium text-muted-foreground">
 								<span>Set</span>
-								<span>Weight</span>
+								<span>Weight ({log.sets[0].unit})</span>
 								<span>Reps</span>
-								<span>Unit</span>
 							</div>
 							{#each log.sets as set (set.id)}
-								<div class="grid grid-cols-4 gap-2 py-1 text-sm" data-testid="set-detail-row">
+								<div class="grid grid-cols-3 gap-2 py-1 text-sm" data-testid="set-detail-row">
 									<span class="text-muted-foreground">{set.setNumber}</span>
 									<span>{set.weight ?? '-'}</span>
 									<span>{set.reps ?? '-'}</span>
-									<span class="text-muted-foreground">{set.unit}</span>
 								</div>
 							{/each}
 						</div>
@@ -162,8 +160,7 @@
 		<AlertDialogHeader>
 			<AlertDialogTitle>Delete Session</AlertDialogTitle>
 			<AlertDialogDescription>
-				Are you sure you want to delete this workout session? This will permanently remove the
-				session and all logged sets. This action cannot be undone.
+				This will permanently remove the session and all logged sets.
 			</AlertDialogDescription>
 		</AlertDialogHeader>
 		<AlertDialogFooter>
@@ -195,8 +192,7 @@
 		<AlertDialogHeader>
 			<AlertDialogTitle>Delete Exercise</AlertDialogTitle>
 			<AlertDialogDescription>
-				Are you sure you want to delete "{deleteExerciseName}" from this session? This will remove
-				all logged sets for this exercise. This action cannot be undone.
+				"{deleteExerciseName}" and all its logged sets will be permanently removed.
 			</AlertDialogDescription>
 		</AlertDialogHeader>
 		<AlertDialogFooter>

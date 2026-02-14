@@ -5,15 +5,15 @@ A self-hosted, mobile-first workout logging app with progressive overload tracki
 ## Requirements
 
 - Node.js 22+
-- `DATABASE_PATH` environment variable pointing to a SQLite database file
 
 ## Development
 
 ```sh
-cp .env.example .env
 npm install
 npm run dev
 ```
+
+The database is automatically created at `./data/workout-tracker.db`.
 
 ## Deployment with Docker
 
@@ -23,7 +23,7 @@ npm run dev
 docker compose up -d
 ```
 
-This builds the image, starts the container on port 3000, and persists the database in a named volume (`workout-data`).
+This starts the container on port 6789 and persists the database via a volume mount to `/data`.
 
 ### Using Docker directly
 
@@ -31,7 +31,6 @@ This builds the image, starts the container on port 3000, and persists the datab
 docker build -t workout-tracker .
 docker run -d \
   -p 3000:3000 \
-  -e DATABASE_PATH=/data/workout-tracker.db \
   -v workout-data:/data \
   workout-tracker
 ```
@@ -41,15 +40,18 @@ docker run -d \
 ```sh
 docker run -d \
   -p 3000:3000 \
-  -e DATABASE_PATH=/data/workout-tracker.db \
   -v workout-data:/data \
   ghcr.io/kavith-k/workout-tracker:latest
 ```
 
-### Environment variables
+### Data persistence
 
-| Variable        | Required | Description                                                     |
-| --------------- | -------- | --------------------------------------------------------------- |
-| `DATABASE_PATH` | Yes      | Path to SQLite database file (e.g., `/data/workout-tracker.db`) |
+The database is stored at `/data/workout-tracker.db` inside the container. Mount a volume to `/data` to persist data across container restarts.
 
-The database file and directory are created automatically on first run.
+### Configuration
+
+No environment variables are required. The app is zero-config.
+
+### HTTPS
+
+Service workers and offline features require HTTPS in most browsers. This works automatically on `localhost`, but remote access over plain HTTP will disable offline support. Use a reverse proxy (e.g., Caddy, Traefik, nginx) to terminate TLS if accessing the app over the network.

@@ -8,6 +8,21 @@
 		data.summary.totalExercises > 0 &&
 			data.summary.completedExercises === data.summary.totalExercises
 	);
+
+	function formatDuration(minutes: number | null): string {
+		if (minutes == null) return '--';
+		if (minutes < 1) return '<1 min';
+		if (minutes < 60) return `${minutes} min`;
+		const h = Math.floor(minutes / 60);
+		const m = minutes % 60;
+		return m > 0 ? `${h}h ${m}m` : `${h}h`;
+	}
+
+	function formatVolume(volume: number): string {
+		if (volume === 0) return '0';
+		if (volume >= 1000) return `${(volume / 1000).toFixed(1).replace(/\.0$/, '')}k`;
+		return volume.toLocaleString();
+	}
 </script>
 
 <div class="space-y-6" data-testid="workout-summary">
@@ -20,20 +35,43 @@
 
 	{#if allCompleted}
 		<div class="rounded-2xl bg-neon/10 p-4 text-center" data-testid="congrats-message">
-			<p class="font-semibold text-neon">All exercises completed! Great work.</p>
+			<p class="font-semibold text-neon">All exercises completed. Great work.</p>
 		</div>
 	{/if}
 
-	<div class="glass-card p-4" data-testid="exercise-count">
-		<p class="text-lg font-semibold">
-			{data.summary.completedExercises}/{data.summary.totalExercises} exercises
-		</p>
-		{#if data.summary.skippedExercises > 0}
-			<p class="text-sm text-muted-foreground">
-				{data.summary.skippedExercises} skipped
+	<!-- Stats grid -->
+	<div class="grid grid-cols-2 gap-3" data-testid="workout-stats">
+		<div class="glass-card p-4 text-center">
+			<p class="text-2xl font-bold" data-testid="stat-exercises">
+				{data.summary.completedExercises}/{data.summary.totalExercises}
 			</p>
-		{/if}
+			<p class="text-xs text-muted-foreground">Exercises</p>
+		</div>
+		<div class="glass-card p-4 text-center">
+			<p class="text-2xl font-bold" data-testid="stat-sets">
+				{data.summary.totalSets}
+			</p>
+			<p class="text-xs text-muted-foreground">Sets</p>
+		</div>
+		<div class="glass-card p-4 text-center">
+			<p class="text-2xl font-bold" data-testid="stat-duration">
+				{formatDuration(data.summary.durationMinutes)}
+			</p>
+			<p class="text-xs text-muted-foreground">Duration</p>
+		</div>
+		<div class="glass-card p-4 text-center">
+			<p class="text-2xl font-bold" data-testid="stat-volume">
+				{formatVolume(data.summary.totalVolume)}
+			</p>
+			<p class="text-xs text-muted-foreground">Volume</p>
+		</div>
 	</div>
+
+	{#if data.summary.skippedExercises > 0}
+		<p class="text-center text-sm text-muted-foreground" data-testid="skipped-count">
+			{data.summary.skippedExercises} exercise{data.summary.skippedExercises !== 1 ? 's' : ''} skipped
+		</p>
+	{/if}
 
 	{#if data.summary.prs.length > 0}
 		<div data-testid="pr-list">
