@@ -4,18 +4,20 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Separator } from '$lib/components/ui/separator';
-	import { Plus, Trash2, ChevronUp, ChevronDown, X } from '@lucide/svelte';
+	import { Plus, Trash2, GripVertical, X } from '@lucide/svelte';
 	import { untrack } from 'svelte';
+	import { flip } from 'svelte/animate';
+	import { dragHandleZone, dragHandle, type DndEvent } from 'svelte-dnd-action';
 	import { generateId } from '$lib/utils';
 
 	type DayExercise = {
-		tempId: string;
+		id: string;
 		exerciseName: string;
 		setsCount: number;
 	};
 
 	type Day = {
-		tempId: string;
+		id: string;
 		name: string;
 		exercises: DayExercise[];
 	};
@@ -31,10 +33,10 @@
 	function buildInitialDays(data?: InitialData): Day[] {
 		if (!data?.days) return [];
 		return data.days.map((d) => ({
-			tempId: generateId(),
+			id: generateId(),
 			name: d.name,
 			exercises: d.exercises.map((ex) => ({
-				tempId: generateId(),
+				id: generateId(),
 				exerciseName: ex.exerciseName,
 				setsCount: ex.setsCount
 			}))
@@ -74,56 +76,40 @@
 		})
 	);
 
+	const FLIP_DURATION_MS = 150;
+
 	function addDay() {
 		days.push({
-			tempId: generateId(),
+			id: generateId(),
 			name: '',
 			exercises: []
 		});
 	}
 
-	function removeDay(dayTempId: string) {
-		const idx = days.findIndex((d) => d.tempId === dayTempId);
+	function removeDay(dayId: string) {
+		const idx = days.findIndex((d) => d.id === dayId);
 		if (idx !== -1) days.splice(idx, 1);
 	}
 
-	function moveDayUp(dayIndex: number) {
-		if (dayIndex <= 0) return;
-		const item = days.splice(dayIndex, 1)[0];
-		days.splice(dayIndex - 1, 0, item);
-	}
-
-	function moveDayDown(dayIndex: number) {
-		if (dayIndex >= days.length - 1) return;
-		const item = days.splice(dayIndex, 1)[0];
-		days.splice(dayIndex + 1, 0, item);
+	function handleDaySort(e: CustomEvent<DndEvent<Day>>) {
+		days = e.detail.items;
 	}
 
 	function addExercise(dayIndex: number) {
 		days[dayIndex].exercises.push({
-			tempId: generateId(),
+			id: generateId(),
 			exerciseName: '',
 			setsCount: 3
 		});
 	}
 
-	function removeExercise(dayIndex: number, exTempId: string) {
-		const idx = days[dayIndex].exercises.findIndex((ex) => ex.tempId === exTempId);
+	function removeExercise(dayIndex: number, exId: string) {
+		const idx = days[dayIndex].exercises.findIndex((ex) => ex.id === exId);
 		if (idx !== -1) days[dayIndex].exercises.splice(idx, 1);
 	}
 
-	function moveExerciseUp(dayIndex: number, exIndex: number) {
-		if (exIndex <= 0) return;
-		const exs = days[dayIndex].exercises;
-		const item = exs.splice(exIndex, 1)[0];
-		exs.splice(exIndex - 1, 0, item);
-	}
-
-	function moveExerciseDown(dayIndex: number, exIndex: number) {
-		const exs = days[dayIndex].exercises;
-		if (exIndex >= exs.length - 1) return;
-		const item = exs.splice(exIndex, 1)[0];
-		exs.splice(exIndex + 1, 0, item);
+	function handleExerciseSort(dayIndex: number, e: CustomEvent<DndEvent<DayExercise>>) {
+		days[dayIndex].exercises = e.detail.items;
 	}
 
 	function validate(): boolean {
@@ -143,14 +129,14 @@
 
 		for (const day of days) {
 			if (!day.name.trim()) {
-				dayNameErrors[day.tempId] = 'Day name is required';
+				dayNameErrors[day.id] = 'Day name is required';
 			}
 			for (const ex of day.exercises) {
 				if (!ex.exerciseName.trim()) {
-					exerciseNameErrors[ex.tempId] = 'Exercise name is required';
+					exerciseNameErrors[ex.id] = 'Exercise name is required';
 				}
 				if (ex.setsCount < 1) {
-					exerciseSetsErrors[ex.tempId] = 'Sets must be at least 1';
+					exerciseSetsErrors[ex.id] = 'Sets must be at least 1';
 				}
 			}
 		}
@@ -199,135 +185,134 @@
 		<p class="text-sm text-destructive">{errors.days}</p>
 	{/if}
 
-	{#each days as day, dayIndex (day.tempId)}
-		<div class="glass-card space-y-4 p-4">
-			<div class="flex items-center gap-2">
-				<div class="flex-1">
-					<Input placeholder="Day name (e.g., Push Day)" bind:value={day.name} />
-					{#if errors.dayNames?.[day.tempId]}
-						<p class="mt-1 text-sm text-destructive">{errors.dayNames[day.tempId]}</p>
-					{/if}
-				</div>
-				<div class="flex items-center gap-1">
-					<Button
+	<div
+		use:dragHandleZone={{
+			items: days,
+			flipDurationMs: FLIP_DURATION_MS,
+			type: 'days',
+			dropTargetStyle: {}
+		}}
+		onconsider={handleDaySort}
+		onfinalize={handleDaySort}
+		class="space-y-4"
+	>
+		{#each days as day, dayIndex (day.id)}
+			<div class="glass-card space-y-4 p-4" animate:flip={{ duration: FLIP_DURATION_MS }}>
+				<div class="flex items-center gap-2">
+					<button
 						type="button"
-						variant="ghost"
-						size="icon-sm"
-						class="min-h-[44px] min-w-[44px]"
-						onclick={() => moveDayUp(dayIndex)}
-						disabled={dayIndex === 0}
-						aria-label="Move day up"
+						use:dragHandle
+						aria-label="Drag to reorder day"
+						class="touch-manipulation cursor-grab rounded p-2 text-muted-foreground hover:text-foreground active:cursor-grabbing"
 					>
-						<ChevronUp class="size-4" />
-					</Button>
+						<GripVertical class="size-5" />
+					</button>
+					<div class="flex-1">
+						<Input placeholder="Day name (e.g., Push Day)" bind:value={day.name} />
+						{#if errors.dayNames?.[day.id]}
+							<p class="mt-1 text-sm text-destructive">{errors.dayNames[day.id]}</p>
+						{/if}
+					</div>
 					<Button
 						type="button"
 						variant="ghost"
 						size="icon-sm"
-						class="min-h-[44px] min-w-[44px]"
-						onclick={() => moveDayDown(dayIndex)}
-						disabled={dayIndex === days.length - 1}
-						aria-label="Move day down"
-					>
-						<ChevronDown class="size-4" />
-					</Button>
-					<Button
-						type="button"
-						variant="ghost"
-						size="icon-sm"
-						class="min-h-[44px] min-w-[44px]"
-						onclick={() => removeDay(day.tempId)}
+						class="min-h-11 min-w-11"
+						onclick={() => removeDay(day.id)}
 						aria-label="Remove day"
 					>
 						<Trash2 class="size-4 text-destructive" />
 					</Button>
 				</div>
-			</div>
 
-			{#each day.exercises as exercise, exIndex (exercise.tempId)}
-				<div class="space-y-1 pl-2">
-					<div class="flex items-center gap-2">
-						<div class="flex-1">
-							<Input
-								placeholder="Exercise name"
-								bind:value={exercise.exerciseName}
-								list="exercise-suggestions"
-							/>
+				<div
+					use:dragHandleZone={{
+						items: day.exercises,
+						flipDurationMs: FLIP_DURATION_MS,
+						type: `exercises-${day.id}`,
+						dropTargetStyle: {}
+					}}
+					onconsider={(e) => handleExerciseSort(dayIndex, e)}
+					onfinalize={(e) => handleExerciseSort(dayIndex, e)}
+					class="space-y-2 pl-2"
+				>
+					{#each day.exercises as exercise (exercise.id)}
+						<div
+							class="space-y-1"
+							animate:flip={{ duration: FLIP_DURATION_MS }}
+						>
+							<div class="flex items-center gap-2">
+								<button
+									type="button"
+									use:dragHandle
+									aria-label="Drag to reorder exercise"
+									class="touch-manipulation cursor-grab rounded p-2 text-muted-foreground hover:text-foreground active:cursor-grabbing"
+								>
+									<GripVertical class="size-4" />
+								</button>
+								<div class="flex-1">
+									<Input
+										placeholder="Exercise name"
+										bind:value={exercise.exerciseName}
+										list="exercise-suggestions"
+									/>
+								</div>
+								<div class="w-20">
+									<Input
+										type="number"
+										inputmode="numeric"
+										min="1"
+										placeholder="Sets"
+										bind:value={exercise.setsCount}
+									/>
+								</div>
+								<Button
+									type="button"
+									variant="ghost"
+									size="icon-sm"
+									class="min-h-11 min-w-11"
+									onclick={() => removeExercise(dayIndex, exercise.id)}
+									aria-label="Remove exercise"
+								>
+									<X class="size-3.5 text-destructive" />
+								</Button>
+							</div>
+							{#if errors.exerciseNames?.[exercise.id]}
+								<p class="text-sm text-destructive">
+									{errors.exerciseNames[exercise.id]}
+								</p>
+							{/if}
+							{#if errors.exerciseSets?.[exercise.id]}
+								<p class="text-sm text-destructive">
+									{errors.exerciseSets[exercise.id]}
+								</p>
+							{/if}
 						</div>
-						<div class="w-20">
-							<Input
-								type="number"
-								inputmode="numeric"
-								min="1"
-								placeholder="Sets"
-								bind:value={exercise.setsCount}
-							/>
-						</div>
-						<div class="flex items-center gap-0.5">
-							<Button
-								type="button"
-								variant="ghost"
-								size="icon-sm"
-								class="min-h-[44px] min-w-[44px]"
-								onclick={() => moveExerciseUp(dayIndex, exIndex)}
-								disabled={exIndex === 0}
-								aria-label="Move exercise up"
-							>
-								<ChevronUp class="size-3.5" />
-							</Button>
-							<Button
-								type="button"
-								variant="ghost"
-								size="icon-sm"
-								class="min-h-[44px] min-w-[44px]"
-								onclick={() => moveExerciseDown(dayIndex, exIndex)}
-								disabled={exIndex === day.exercises.length - 1}
-								aria-label="Move exercise down"
-							>
-								<ChevronDown class="size-3.5" />
-							</Button>
-							<Button
-								type="button"
-								variant="ghost"
-								size="icon-sm"
-								class="min-h-[44px] min-w-[44px]"
-								onclick={() => removeExercise(dayIndex, exercise.tempId)}
-								aria-label="Remove exercise"
-							>
-								<X class="size-3.5 text-destructive" />
-							</Button>
-						</div>
-					</div>
-					{#if errors.exerciseNames?.[exercise.tempId]}
-						<p class="text-sm text-destructive">{errors.exerciseNames[exercise.tempId]}</p>
-					{/if}
-					{#if errors.exerciseSets?.[exercise.tempId]}
-						<p class="text-sm text-destructive">{errors.exerciseSets[exercise.tempId]}</p>
-					{/if}
+					{/each}
 				</div>
-			{/each}
 
-			<Button
-				type="button"
-				variant="outline"
-				size="sm"
-				class="min-h-[44px] w-full"
-				onclick={() => addExercise(dayIndex)}
-			>
-				<Plus class="size-4" />
-				Add Exercise
-			</Button>
-		</div>
-	{/each}
+				<Button
+					type="button"
+					variant="outline"
+					size="sm"
+					class="min-h-11 w-full"
+					onclick={() => addExercise(dayIndex)}
+				>
+					<Plus class="size-4" />
+					Add Exercise
+				</Button>
+			</div>
+		{/each}
+	</div>
 
-	<Button type="button" variant="outline" class="min-h-[44px] w-full" onclick={addDay}>
+	<Button type="button" variant="outline" class="min-h-11 w-full" onclick={addDay}>
 		<Plus class="size-4" />
 		Add Day
 	</Button>
 
 	<Separator />
 
-	<Button type="submit" class="min-h-[44px] w-full" disabled={submitting}>
+	<Button type="submit" class="min-h-11 w-full" disabled={submitting}>
 		{submitting ? 'Saving...' : submitLabel}
 	</Button>
 
