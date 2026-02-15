@@ -29,8 +29,9 @@ src/
     components/
       ui/                  # shadcn-svelte components
       layout/              # App shell, navigation, resume banner
-      program/             # Programme form
-      workout/             # Workout wizard components
+      home/                # ConsistencyGrid (GitHub-style activity heatmap)
+      program/             # Programme form (drag-to-reorder via svelte-dnd-action)
+      workout/             # Workout wizard, ExerciseStep (set logging, copy-down, volume)
       shared/              # Offline indicator, empty state, confirm dialog
     offline/
       queue.ts             # IndexedDB queue management
@@ -49,7 +50,7 @@ e2e/                       # Playwright E2E tests
 
 | Route                          | Purpose                                       |
 | ------------------------------ | --------------------------------------------- |
-| `/`                            | Home screen with active programme days         |
+| `/`                            | Home screen with active programme days and consistency grid |
 | `/workout/start`               | Form action to create session and redirect     |
 | `/workout/[sessionId]`         | Active workout logging interface               |
 | `/workout/[sessionId]/summary` | Post-workout summary with PRs and stats        |
@@ -78,11 +79,18 @@ Each set row is a `<form action="?/updateSet">` with `use:enhance`. Weight and r
 
 If the server is unreachable, the action is queued to IndexedDB for later sync (see [offline docs](offline.md)).
 
+A **copy-down** button (arrow icon) appears on empty sets, copying weight and reps from the previous set. Live **volume** (weight x reps summed) is shown per exercise alongside the previous session's volume.
+
 ### Completing a Workout
 
 1. User taps "Stop" and confirms
-2. Session marked as `completed`, unlogged exercises auto-marked as `skipped`
-3. Redirects to summary page showing completion stats and any PRs
+2. Unlogged exercises are auto-marked as `skipped`
+3. If **no exercises** have any logged reps, the workout is cancelled: all logs and the session are deleted, and the user is redirected home with a cancellation message
+4. Otherwise, session marked as `completed` and redirected to summary page with PRs and stats
+
+### Programme Editing
+
+Days and exercises within the programme form are reordered via **drag-and-drop** (using `svelte-dnd-action` with drag handles). Touch-friendly with flip animations.
 
 ### Stale Workout Cleanup
 
@@ -98,3 +106,5 @@ The root layout server load calls `closeStaleWorkouts()` on every page load. Any
 | Per-set immediate save      | Maximum data safety, survives crashes/closes                  |
 | Single active programme     | Simplifies home screen and workout start flow                 |
 | IndexedDB for offline queue | Browser-native, reliable, works with service workers          |
+| svelte-dnd-action           | Touch-friendly drag-and-drop with Svelte integration          |
+| Empty workout cancellation  | Prevents clutter from accidental/empty workout sessions       |

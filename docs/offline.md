@@ -40,7 +40,7 @@ Actions are dropped after 10 failed retries.
 | Action             | Description                          |
 | ------------------ | ------------------------------------ |
 | `SAVE_EXERCISE`    | Save set weight/reps/unit            |
-| `COMPLETE_WORKOUT` | Mark session as completed            |
+| `COMPLETE_WORKOUT` | Complete or cancel session (see below) |
 | `ADD_ADHOC`        | Add an ad-hoc exercise to a session  |
 | `ADD_SET`          | Add a set to an exercise log         |
 | `REMOVE_SET`       | Remove a set from an exercise log    |
@@ -55,6 +55,10 @@ Actions are dropped after 10 failed retries.
 - **Failure**: Retry count incremented; dropped after 10 retries
 
 The `/api/sync` endpoint dispatches to existing server-side query functions (e.g., `updateSetLog`, `completeWorkout`, `addAdhocExercise`).
+
+### Empty Workout Cancellation
+
+When `COMPLETE_WORKOUT` is processed (online or via sync), `completeWorkout()` checks whether any exercise has logged reps. If no reps were logged for any exercise, the session, exercise logs, and set logs are deleted and the response includes `{ cancelled: true }`. The client redirects to home instead of the summary page.
 
 ## Reactive State
 
