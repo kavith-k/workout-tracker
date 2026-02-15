@@ -203,7 +203,7 @@
 						type="button"
 						use:dragHandle
 						aria-label="Drag to reorder day"
-						class="touch-manipulation cursor-grab rounded p-2 text-muted-foreground hover:text-foreground active:cursor-grabbing"
+						class="cursor-grab touch-manipulation rounded p-2 text-muted-foreground hover:text-foreground active:cursor-grabbing"
 					>
 						<GripVertical class="size-5" />
 					</button>
@@ -237,16 +237,13 @@
 					class="space-y-2 pl-2"
 				>
 					{#each day.exercises as exercise (exercise.id)}
-						<div
-							class="space-y-1"
-							animate:flip={{ duration: FLIP_DURATION_MS }}
-						>
+						<div class="space-y-1" animate:flip={{ duration: FLIP_DURATION_MS }}>
 							<div class="flex items-center gap-2">
 								<button
 									type="button"
 									use:dragHandle
 									aria-label="Drag to reorder exercise"
-									class="touch-manipulation cursor-grab rounded p-2 text-muted-foreground hover:text-foreground active:cursor-grabbing"
+									class="cursor-grab touch-manipulation rounded p-2 text-muted-foreground hover:text-foreground active:cursor-grabbing"
 								>
 									<GripVertical class="size-4" />
 								</button>

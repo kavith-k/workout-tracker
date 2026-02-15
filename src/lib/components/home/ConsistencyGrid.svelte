@@ -79,7 +79,7 @@
 </script>
 
 <div class="overflow-x-auto">
-	<div class="inline-grid gap-[3px]" style="grid-template-columns: auto repeat({WEEKS}, 1fr);">
+	<div class="inline-grid gap-0.75" style="grid-template-columns: auto repeat({WEEKS}, 1fr);">
 		<!-- Month labels row -->
 		<div></div>
 		{#each grid as week, wi (wi)}
@@ -103,7 +103,7 @@
 			{#each grid as week, wi (wi)}
 				{@const day = week.days[dayIndex]}
 				<div
-					class="size-[13px] rounded-[3px] {day.isFuture
+					class="size-3.25 rounded-[3px] {day.isFuture
 						? 'bg-transparent'
 						: day.isToday
 							? day.hasWorkout
