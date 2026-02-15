@@ -60,7 +60,10 @@ export const POST: RequestHandler = async ({ request }) => {
 				if (!isValidId(payload.sessionId)) {
 					return badRequest('sessionId must be a positive integer');
 				}
-				completeWorkout(db, payload.sessionId);
+				const completeResult = completeWorkout(db, payload.sessionId);
+				if (completeResult && 'cancelled' in completeResult && completeResult.cancelled) {
+					return json({ success: true, cancelled: true });
+				}
 				break;
 			}
 			case 'ADD_ADHOC': {

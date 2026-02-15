@@ -2,6 +2,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
+	import { ArrowDown } from '@lucide/svelte';
 
 	interface SetData {
 		id: number;
@@ -25,6 +26,7 @@
 	let {
 		exercise,
 		overload,
+		prescribedSets,
 		onupdateset,
 		ontoggleunit,
 		onaddset,
@@ -32,11 +34,33 @@
 	}: {
 		exercise: ExerciseLog;
 		overload: OverloadData | undefined;
+		prescribedSets?: number;
 		onupdateset: (setIndex: number, field: 'weight' | 'reps', value: number | null) => void;
 		ontoggleunit: () => void;
 		onaddset: () => void;
 		onremoveset: (setIndex: number) => void;
 	} = $props();
+
+	function canRemoveSet(index: number): boolean {
+		// If no prescribed count is known, fall back to allowing removal when there's more than one set
+		if (prescribedSets == null) return exercise.sets.length > 1;
+		// Only allow removal of manually added sets (beyond the prescribed count)
+		return index >= prescribedSets;
+	}
+
+	function canCopyDown(index: number): boolean {
+		if (index === 0) return false;
+		const set = exercise.sets[index];
+		// Only available when current set fields are empty
+		return set.weight == null && set.reps == null;
+	}
+
+	function handleCopyDown(index: number) {
+		const prev = exercise.sets[index - 1];
+		if (!prev) return;
+		if (prev.weight != null) onupdateset(index, 'weight', prev.weight);
+		if (prev.reps != null) onupdateset(index, 'reps', prev.reps);
+	}
 
 	function formatDate(date: Date): string {
 		return new Date(date).toLocaleDateString('en-GB', {
@@ -51,6 +75,19 @@
 	}
 
 	let unit = $derived(exercise.sets[0]?.unit ?? 'kg');
+
+	const fmt = new Intl.NumberFormat('en-GB');
+
+	let currentVolume = $derived(
+		exercise.sets.reduce((sum, s) => {
+			if (s.weight != null && s.reps != null) return sum + s.weight * s.reps;
+			return sum;
+		}, 0)
+	);
+
+	let previousVolume = $derived(
+		overload?.previous?.sets.reduce((sum, s) => sum + s.weight * s.reps, 0) ?? 0
+	);
 </script>
 
 <div class="glass-card overflow-hidden p-4" data-testid="exercise-step">
@@ -79,6 +116,14 @@
 					Max: {overload.max.weight}{overload.max.unit} x {overload.max.reps} reps ({formatDate(
 						overload.max.date
 					)})
+				</p>
+			{/if}
+			{#if currentVolume > 0 || previousVolume > 0}
+				<p data-testid="volume-hint">
+					Volume: {fmt.format(currentVolume)}
+					{unit}{#if previousVolume > 0}
+						<span class="ml-1">(prev: {fmt.format(previousVolume)} {unit})</span>
+					{/if}
 				</p>
 			{/if}
 		</div>
@@ -131,7 +176,18 @@
 					}}
 					data-testid="reps-input-{i}"
 				/>
-				{#if exercise.sets.length > 1}
+				{#if canCopyDown(i)}
+					<Button
+						type="button"
+						variant="ghost"
+						size="icon-sm"
+						class="min-h-11 min-w-11 text-muted-foreground"
+						onclick={() => handleCopyDown(i)}
+						data-testid="copy-down-{i}"
+					>
+						<ArrowDown class="size-4" />
+					</Button>
+				{:else if canRemoveSet(i)}
 					<Button
 						type="button"
 						variant="ghost"

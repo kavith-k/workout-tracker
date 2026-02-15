@@ -18,14 +18,60 @@
 		AlertDialogHeader,
 		AlertDialogTitle
 	} from '$lib/components/ui/alert-dialog';
-	import { ChevronRight, Ellipsis } from '@lucide/svelte';
+	import { ChevronRight, Ellipsis, LoaderCircle } from '@lucide/svelte';
+	import type { SessionSummary } from '$lib/server/db/queries/history';
 
 	let { data, form } = $props();
+
+	let sessions = $state<SessionSummary[]>([]);
+	let currentPage = $state(1);
+	let loading = $state(false);
+	let hasMore = $state(true);
+	let sentinel = $state<HTMLDivElement>();
 
 	let deleteDialogOpen = $state(false);
 	let deleteTargetId = $state<number | null>(null);
 	let deleteTargetDay = $state('');
 	let deletingSession = $state(false);
+
+	// Initialise from server-loaded data
+	$effect(() => {
+		sessions = data.sessions;
+		currentPage = data.page;
+		hasMore = data.page * data.limit < data.total;
+	});
+
+	async function loadMore() {
+		if (loading || !hasMore) return;
+		loading = true;
+
+		const nextPage = currentPage + 1;
+		const res = await fetch(`/api/history?page=${nextPage}&limit=${data.limit}`);
+		const result: { sessions: SessionSummary[]; total: number } = await res.json();
+
+		sessions = [...sessions, ...result.sessions];
+		currentPage = nextPage;
+		hasMore = nextPage * data.limit < result.total;
+		loading = false;
+	}
+
+	// Set up IntersectionObserver on the sentinel element
+	$effect(() => {
+		if (!sentinel) return;
+
+		const observer = new IntersectionObserver(
+			(entries) => {
+				if (entries[0].isIntersecting) {
+					loadMore();
+				}
+			},
+			{ rootMargin: '200px' }
+		);
+
+		observer.observe(sentinel);
+
+		return () => observer.disconnect();
+	});
 
 	function openDeleteDialog(id: number, dayName: string) {
 		deleteTargetId = id;
@@ -58,7 +104,7 @@
 		</div>
 	{/if}
 
-	{#if data.sessions.length === 0}
+	{#if sessions.length === 0}
 		<div
 			class="flex flex-col items-center justify-center gap-3 py-16 text-center"
 			data-testid="empty-state"
@@ -67,7 +113,7 @@
 		</div>
 	{:else}
 		<div class="glass-card overflow-hidden">
-			{#each data.sessions as session (session.id)}
+			{#each sessions as session (session.id)}
 				<div
 					data-testid="session-card"
 					class="flex min-h-[44px] items-center border-b border-border/40 last:border-b-0"
@@ -120,6 +166,15 @@
 				</div>
 			{/each}
 		</div>
+
+		<!-- Sentinel for infinite scroll -->
+		{#if hasMore}
+			<div bind:this={sentinel} class="flex justify-center py-4">
+				{#if loading}
+					<LoaderCircle class="size-6 animate-spin text-muted-foreground" />
+				{/if}
+			</div>
+		{/if}
 	{/if}
 </div>
 

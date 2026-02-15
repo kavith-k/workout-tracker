@@ -1,6 +1,6 @@
 ## Project Overview
 
-Workout Tracker — a self-hosted, mobile-first SvelteKit app for logging workouts with progressive overload tracking. Single-user, no auth. See `llm-docs/v1/REQUIREMENTS.md` for full product requirements and `llm-docs/v1/TECHNICAL_DESIGN.md` for architecture details.
+Workout Tracker -- a self-hosted, mobile-first SvelteKit app for logging workouts with progressive overload tracking. Single-user, no auth. See `docs/` for architecture, database schema, offline design, and deployment. See `llm-docs/` for original product requirements and technical design.
 
 ## Tech Stack
 
@@ -50,41 +50,36 @@ Two test projects configured in `vite.config.ts`:
 
 Any documentation written by agents must be clear, simple, and short. No unnecessary verbosity.
 
-## Architecture
+## Key File Locations
 
-- **DB schema**: `src/lib/server/db/schema.ts` — Drizzle schema definition
-- **DB connection**: `src/lib/server/db/index.ts` — creates connection with auto-detected path
-- **Drizzle config**: `drizzle.config.ts` — migration config, schema path, SQLite dialect
-- **Shared utils**: `src/lib/utils.ts` — `cn()` helper for Tailwind class merging + shadcn type helpers
-- **Routes**: `src/routes/` — SvelteKit file-based routing
-- **Components**: `src/lib/components/` — organized by domain (layout, workout, program, history, exercises, shared, ui)
-- **Server logic**: `src/lib/server/` — DB queries in `db/queries/`, utilities in `utils/`
+- **DB schema**: `src/lib/server/db/schema.ts`
+- **DB connection**: `src/lib/server/db/index.ts`
+- **DB queries**: `src/lib/server/db/queries/`
+- **Drizzle config**: `drizzle.config.ts`
+- **Shared utils**: `src/lib/utils.ts`
+- **Routes**: `src/routes/`
+- **Components**: `src/lib/components/` (layout, workout, program, shared, ui)
+- **Server logic**: `src/lib/server/`
+- **Offline module**: `src/lib/offline/`
 
 ## Documentation Lookup Rules
 
 **CRITICAL: Never rely on training data for syntax or APIs. Always look up latest docs.**
 
-- **Svelte/SvelteKit**: Use the Svelte MCP server (`list-sections` then `get-documentation`). Always run `svelte-autofixer` on any Svelte code before finalizing.
-- **shadcn-svelte**: Use https://www.shadcn-svelte.com — index at https://www.shadcn-svelte.com/llms.txt
+- **Svelte/SvelteKit**: Use the Svelte MCP server (`list-sections` then `get-documentation`). Always run `svelte-autofixer` on any Svelte code before finalising.
+- **shadcn-svelte**: Use https://www.shadcn-svelte.com -- index at https://www.shadcn-svelte.com/llms.txt
 - **All other technologies**: Use the Context7 MCP Server for up-to-date documentation.
 
 ## Svelte MCP Tools
 
-1. **list-sections** — Use this FIRST to discover all available documentation sections. Returns a structured list with titles, use_cases, and paths. When asked about Svelte or SvelteKit topics, ALWAYS use this tool at the start of the chat to find relevant sections.
-2. **get-documentation** — Retrieves full documentation content for specific sections. Accepts single or multiple sections. After calling the list-sections tool, you MUST analyze the returned documentation sections (especially the use_cases field) and then use the get-documentation tool to fetch ALL documentation sections that are relevant for the user's task.
-3. **svelte-autofixer** — Analyzes Svelte code and returns issues and suggestions. You MUST use this tool whenever writing Svelte code before sending it to the user. Keep calling it until no issues or suggestions are returned.
+1. **list-sections** -- Use this FIRST to discover all available documentation sections.
+2. **get-documentation** -- Retrieves full documentation content for specific sections. After calling list-sections, analyse the returned sections and fetch ALL relevant ones.
+3. **svelte-autofixer** -- Analyses Svelte code and returns issues and suggestions. MUST be used on any Svelte code before finalising. Keep calling until no issues remain.
 
 ## Context7 MCP Tools
 
-1. **resolve-library-id** — Resolves a general library name into a Context7-compatible library ID.
-
-- `query` (required): The user's question or task (used to rank results by relevance)
-- `libraryName` (required): The name of the library to search for
-
-2. **query-docs** — Retrieves documentation for a library using a Context7-compatible library ID.
-
-- `libraryId` (required): Exact Context7-compatible library ID (e.g., shadcn-svelte.com/docs, tailwindcss.com/docs)
-- `query` (required): The question or task to get relevant documentation for
+1. **resolve-library-id** -- Resolves a library name into a Context7-compatible library ID.
+2. **query-docs** -- Retrieves documentation for a library using a Context7-compatible library ID.
 
 ## Branching & PR Workflow
 
@@ -121,7 +116,7 @@ The `playwright-cli` skill is available for any Playwright browser automation ac
 
 At the end of each phase, a verifier subagent MUST be kicked off to check:
 
-1. Everything is built as per the plan — no outstanding items
+1. Everything is built as per the plan -- no outstanding items
 2. No regressions or bugs introduced
-3. All rules in this file were followed — no shortcuts taken
+3. All rules in this file were followed -- no shortcuts taken
 4. Code quality: DRY/YAGNI, clear, self-documenting

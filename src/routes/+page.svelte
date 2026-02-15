@@ -1,12 +1,26 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { onMount } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import { ChevronRight } from '@lucide/svelte';
+	import ConsistencyGrid from '$lib/components/home/ConsistencyGrid.svelte';
 
 	let { data } = $props();
 
 	let startError = $state('');
+	let showCancelledBanner = $state(false);
+
+	onMount(() => {
+		if (new URL(window.location.href).searchParams.has('cancelled')) {
+			showCancelledBanner = true;
+			window.history.replaceState({}, '', '/');
+			const timeout = setTimeout(() => {
+				showCancelledBanner = false;
+			}, 4000);
+			return () => clearTimeout(timeout);
+		}
+	});
 
 	function formatDaysAgo(daysAgo: number): string {
 		if (daysAgo === 0) return 'today';
@@ -17,6 +31,15 @@
 
 <div class="space-y-6">
 	<h1 class="text-3xl font-bold tracking-tight">Home</h1>
+
+	{#if showCancelledBanner}
+		<div
+			class="rounded-2xl border border-muted-foreground/20 bg-muted/50 p-3 text-sm text-muted-foreground"
+			data-testid="workout-cancelled-banner"
+		>
+			Workout cancelled — no exercises were logged.
+		</div>
+	{/if}
 
 	{#if data.inProgressWorkout}
 		<div
@@ -104,4 +127,9 @@
 			</div>
 		</div>
 	{/if}
+
+	<div>
+		<h3 class="mb-2 text-sm font-medium text-muted-foreground">Activity</h3>
+		<ConsistencyGrid workoutDates={data.workoutDates} />
+	</div>
 </div>

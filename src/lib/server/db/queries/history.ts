@@ -1,4 +1,4 @@
-import { eq, and, asc, desc, count, countDistinct, sql } from 'drizzle-orm';
+import { eq, and, asc, desc, count } from 'drizzle-orm';
 import { workoutSessions, exerciseLogs, setLogs } from '../schema';
 import type { createTestDb } from '../test-helper';
 import type { WorkoutSession } from './workouts';
@@ -14,23 +14,6 @@ export type SessionSummary = {
 	exerciseCount: number;
 	completedCount: number;
 	skippedCount: number;
-};
-
-export type ExerciseHistoryEntry = {
-	exerciseLogId: number;
-	sessionId: number;
-	programName: string;
-	dayName: string;
-	completedAt: Date;
-	status: string;
-	sets: Array<{ setNumber: number; weight: number | null; reps: number | null; unit: string }>;
-};
-
-export type ExerciseWithHistory = {
-	id: number;
-	name: string;
-	sessionCount: number;
-	lastPerformed: Date | null;
 };
 
 export function getSessionsByDate(
@@ -112,86 +95,6 @@ export function getSessionDetail(db: Db, sessionId: number): WorkoutSession | nu
 	});
 
 	return { ...session, exerciseLogs: logsWithSets };
-}
-
-export function getHistoryByExercise(db: Db): ExerciseWithHistory[] {
-	const rows = db
-		.select({
-			id: exerciseLogs.exerciseId,
-			name: exerciseLogs.exerciseName,
-			sessionCount: countDistinct(exerciseLogs.sessionId),
-			lastPerformed: sql<Date | null>`MAX(${workoutSessions.completedAt})`
-		})
-		.from(exerciseLogs)
-		.innerJoin(workoutSessions, eq(exerciseLogs.sessionId, workoutSessions.id))
-		.where(eq(workoutSessions.status, 'completed'))
-		.groupBy(exerciseLogs.exerciseId, exerciseLogs.exerciseName)
-		.orderBy(asc(exerciseLogs.exerciseName))
-		.all();
-
-	return rows.map((row) => ({
-		id: row.id!,
-		name: row.name,
-		sessionCount: row.sessionCount,
-		lastPerformed: row.lastPerformed
-	}));
-}
-
-export function getExerciseHistory(
-	db: Db,
-	exerciseId: number,
-	page: number = 1,
-	limit: number = 20
-): { entries: ExerciseHistoryEntry[]; total: number } {
-	const totalResult = db
-		.select({ count: countDistinct(exerciseLogs.id) })
-		.from(exerciseLogs)
-		.innerJoin(workoutSessions, eq(exerciseLogs.sessionId, workoutSessions.id))
-		.where(and(eq(exerciseLogs.exerciseId, exerciseId), eq(workoutSessions.status, 'completed')))
-		.get();
-
-	const total = totalResult?.count ?? 0;
-
-	const offset = (page - 1) * limit;
-
-	const logs = db
-		.select({
-			exerciseLogId: exerciseLogs.id,
-			sessionId: exerciseLogs.sessionId,
-			programName: workoutSessions.programName,
-			dayName: workoutSessions.dayName,
-			completedAt: workoutSessions.completedAt,
-			status: exerciseLogs.status
-		})
-		.from(exerciseLogs)
-		.innerJoin(workoutSessions, eq(exerciseLogs.sessionId, workoutSessions.id))
-		.where(and(eq(exerciseLogs.exerciseId, exerciseId), eq(workoutSessions.status, 'completed')))
-		.orderBy(desc(workoutSessions.completedAt))
-		.limit(limit)
-		.offset(offset)
-		.all();
-
-	const entries: ExerciseHistoryEntry[] = logs.map((log) => {
-		const sets = db
-			.select({
-				setNumber: setLogs.setNumber,
-				weight: setLogs.weight,
-				reps: setLogs.reps,
-				unit: setLogs.unit
-			})
-			.from(setLogs)
-			.where(eq(setLogs.exerciseLogId, log.exerciseLogId))
-			.orderBy(asc(setLogs.setNumber))
-			.all();
-
-		return {
-			...log,
-			completedAt: log.completedAt!,
-			sets
-		};
-	});
-
-	return { entries, total };
 }
 
 export function deleteSession(db: Db, sessionId: number) {

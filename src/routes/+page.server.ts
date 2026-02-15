@@ -1,6 +1,7 @@
 import type { PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
 import { getActiveProgram } from '$lib/server/db/queries/programs';
+import { getCompletedWorkoutDates } from '$lib/server/db/queries/workouts';
 import { workoutSessions } from '$lib/server/db/schema';
 import { desc, eq } from 'drizzle-orm';
 
@@ -24,5 +25,9 @@ export const load: PageServerLoad = async () => {
 		}
 	}
 
-	return { activeProgram, lastWorkout };
+	const sixteenWeeksAgo = new Date();
+	sixteenWeeksAgo.setDate(sixteenWeeksAgo.getDate() - 16 * 7);
+	const workoutDates = getCompletedWorkoutDates(db, sixteenWeeksAgo);
+
+	return { activeProgram, lastWorkout, workoutDates };
 };
