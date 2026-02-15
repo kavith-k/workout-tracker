@@ -121,10 +121,7 @@ export function startWorkout(db: Db, workoutDayId: number) {
 	return session;
 }
 
-export function getPrescribedSetCounts(
-	db: Db,
-	sessionId: number
-): Record<number, number> {
+export function getPrescribedSetCounts(db: Db, sessionId: number): Record<number, number> {
 	const session = db.select().from(workoutSessions).where(eq(workoutSessions.id, sessionId)).get();
 	if (!session?.workoutDayId) return {};
 

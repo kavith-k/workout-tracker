@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { page } from '$app/stores';
-	import { goto } from '$app/navigation';
+	import { onMount } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import { ChevronRight } from '@lucide/svelte';
@@ -12,12 +11,10 @@
 	let startError = $state('');
 	let showCancelledBanner = $state(false);
 
-	$effect(() => {
-		if ($page.url.searchParams.has('cancelled')) {
+	onMount(() => {
+		if (new URL(window.location.href).searchParams.has('cancelled')) {
 			showCancelledBanner = true;
-			// Remove the query param from the URL without navigation
-			goto('/', { replaceState: true, keepFocus: true, noScroll: true });
-			// Auto-dismiss after 4 seconds
+			window.history.replaceState({}, '', '/');
 			const timeout = setTimeout(() => {
 				showCancelledBanner = false;
 			}, 4000);
@@ -129,7 +126,6 @@
 				{/each}
 			</div>
 		</div>
-
 	{/if}
 
 	{#if data.workoutDates.length > 0}

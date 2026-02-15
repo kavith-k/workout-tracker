@@ -90,6 +90,8 @@ describe('workout queries', () => {
 		it('does not return completed workouts', () => {
 			const { day } = setupProgramWithDay('PPL', 'Push', ['Bench Press']);
 			const session = startWorkout(db, day.id);
+			const ws = getWorkoutSession(db, session.id)!;
+			updateSetLog(db, ws.exerciseLogs[0].sets[0].id, { weight: 80, reps: 8 });
 			completeWorkout(db, session.id);
 
 			expect(getInProgressWorkout(db)).toBeNull();
@@ -348,11 +350,16 @@ describe('workout queries', () => {
 		it('marks session as completed', () => {
 			const { day } = setupProgramWithDay('PPL', 'Push', ['Bench Press']);
 			const session = startWorkout(db, day.id);
+			const ws = getWorkoutSession(db, session.id)!;
+			updateSetLog(db, ws.exerciseLogs[0].sets[0].id, { weight: 80, reps: 8 });
 
 			const completed = completeWorkout(db, session.id);
 
-			expect(completed!.status).toBe('completed');
-			expect(completed!.completedAt).toBeDefined();
+			expect('cancelled' in completed).toBe(false);
+			if (!('cancelled' in completed)) {
+				expect(completed.status).toBe('completed');
+				expect(completed.completedAt).toBeDefined();
+			}
 		});
 
 		it('marks unlogged exercises as skipped', () => {
@@ -381,6 +388,42 @@ describe('workout queries', () => {
 
 			const updatedWs = getWorkoutSession(db, session.id)!;
 			expect(updatedWs.exerciseLogs[0].status).toBe('logged');
+		});
+
+		it('cancels workout when no exercises have reps logged', () => {
+			const { day } = setupProgramWithDay('PPL', 'Push', ['Bench Press', 'OHP']);
+			const session = startWorkout(db, day.id);
+
+			const result = completeWorkout(db, session.id);
+
+			expect(result).toEqual({ cancelled: true });
+			expect(getWorkoutSession(db, session.id)).toBeNull();
+		});
+
+		it('cancels workout when only weight is filled but no reps', () => {
+			const { day } = setupProgramWithDay('PPL', 'Push', ['Bench Press']);
+			const session = startWorkout(db, day.id);
+			const ws = getWorkoutSession(db, session.id)!;
+			updateSetLog(db, ws.exerciseLogs[0].sets[0].id, { weight: 80 });
+
+			const result = completeWorkout(db, session.id);
+
+			expect(result).toEqual({ cancelled: true });
+			expect(getWorkoutSession(db, session.id)).toBeNull();
+		});
+
+		it('completes workout when bodyweight exercise has reps but no weight', () => {
+			const { day } = setupProgramWithDay('PPL', 'Push', ['Pull-ups']);
+			const session = startWorkout(db, day.id);
+			const ws = getWorkoutSession(db, session.id)!;
+			updateSetLog(db, ws.exerciseLogs[0].sets[0].id, { reps: 10 });
+
+			const result = completeWorkout(db, session.id);
+
+			expect('cancelled' in result).toBe(false);
+			if (!('cancelled' in result)) {
+				expect(result.status).toBe('completed');
+			}
 		});
 	});
 
@@ -595,6 +638,8 @@ describe('workout queries', () => {
 		it('closes workouts older than 4 hours', () => {
 			const { day } = setupProgramWithDay('PPL', 'Push', ['Bench Press']);
 			const session = startWorkout(db, day.id);
+			const ws = getWorkoutSession(db, session.id)!;
+			updateSetLog(db, ws.exerciseLogs[0].sets[0].id, { weight: 80, reps: 8 });
 
 			// Manually set startedAt to 5 hours ago
 			const fiveHoursAgo = new Date(Date.now() - 5 * 60 * 60 * 1000);
