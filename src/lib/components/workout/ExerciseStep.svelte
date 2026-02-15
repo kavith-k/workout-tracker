@@ -2,6 +2,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
+	import { ArrowDown } from '@lucide/svelte';
 
 	interface SetData {
 		id: number;
@@ -47,6 +48,20 @@
 		return index >= prescribedSets;
 	}
 
+	function canCopyDown(index: number): boolean {
+		if (index === 0) return false;
+		const set = exercise.sets[index];
+		// Only available when current set fields are empty
+		return set.weight == null && set.reps == null;
+	}
+
+	function handleCopyDown(index: number) {
+		const prev = exercise.sets[index - 1];
+		if (!prev) return;
+		if (prev.weight != null) onupdateset(index, 'weight', prev.weight);
+		if (prev.reps != null) onupdateset(index, 'reps', prev.reps);
+	}
+
 	function formatDate(date: Date): string {
 		return new Date(date).toLocaleDateString('en-GB', {
 			day: 'numeric',
@@ -60,6 +75,19 @@
 	}
 
 	let unit = $derived(exercise.sets[0]?.unit ?? 'kg');
+
+	const fmt = new Intl.NumberFormat('en-GB');
+
+	let currentVolume = $derived(
+		exercise.sets.reduce((sum, s) => {
+			if (s.weight != null && s.reps != null) return sum + s.weight * s.reps;
+			return sum;
+		}, 0)
+	);
+
+	let previousVolume = $derived(
+		overload?.previous?.sets.reduce((sum, s) => sum + s.weight * s.reps, 0) ?? 0
+	);
 </script>
 
 <div class="glass-card overflow-hidden p-4" data-testid="exercise-step">
@@ -88,6 +116,14 @@
 					Max: {overload.max.weight}{overload.max.unit} x {overload.max.reps} reps ({formatDate(
 						overload.max.date
 					)})
+				</p>
+			{/if}
+			{#if currentVolume > 0 || previousVolume > 0}
+				<p data-testid="volume-hint">
+					Volume: {fmt.format(currentVolume)}
+					{unit}{#if previousVolume > 0}
+						<span class="ml-1">(prev: {fmt.format(previousVolume)} {unit})</span>
+					{/if}
 				</p>
 			{/if}
 		</div>
@@ -140,7 +176,18 @@
 					}}
 					data-testid="reps-input-{i}"
 				/>
-				{#if canRemoveSet(i)}
+				{#if canCopyDown(i)}
+					<Button
+						type="button"
+						variant="ghost"
+						size="icon-sm"
+						class="min-h-11 min-w-11 text-muted-foreground"
+						onclick={() => handleCopyDown(i)}
+						data-testid="copy-down-{i}"
+					>
+						<ArrowDown class="size-4" />
+					</Button>
+				{:else if canRemoveSet(i)}
 					<Button
 						type="button"
 						variant="ghost"

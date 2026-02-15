@@ -1,9 +1,9 @@
 <script lang="ts">
+	/* eslint-disable svelte/prefer-svelte-reactivity -- Date used for computation only, not reactive state */
 	let { workoutDates }: { workoutDates: string[] } = $props();
 
 	const WEEKS = 16;
-	const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-	const DAY_LABELS: Record<number, string> = { 0: 'Mon', 2: 'Wed', 4: 'Fri' };
+	const DAYS = ['Mon', '', 'Wed', '', 'Fri', '', ''];
 
 	let workoutSet = $derived(new Set(workoutDates));
 
@@ -83,7 +83,7 @@
 		<!-- Month labels row -->
 		<div></div>
 		{#each grid as week, wi (wi)}
-			<div class="text-[10px] leading-none text-muted-foreground h-4 flex items-end">
+			<div class="flex h-4 items-end text-[10px] leading-none text-muted-foreground">
 				{#if week.monthLabel}
 					{week.monthLabel}
 				{/if}
@@ -91,12 +91,12 @@
 		{/each}
 
 		<!-- Grid rows (one per day of week) -->
-		{#each DAYS as _, dayIndex (dayIndex)}
+		{#each DAYS as dayLabel, dayIndex (dayIndex)}
 			<!-- Day label -->
 			<div
 				class="flex items-center justify-end pr-1 text-[10px] leading-none text-muted-foreground"
 			>
-				{DAY_LABELS[dayIndex] ?? ''}
+				{dayLabel}
 			</div>
 
 			<!-- Day cells -->
