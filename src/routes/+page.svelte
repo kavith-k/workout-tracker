@@ -128,10 +128,8 @@
 		</div>
 	{/if}
 
-	{#if data.workoutDates.length > 0}
-		<div>
-			<h3 class="mb-2 text-sm font-medium text-muted-foreground">Activity</h3>
-			<ConsistencyGrid workoutDates={data.workoutDates} />
-		</div>
-	{/if}
+	<div>
+		<h3 class="mb-2 text-sm font-medium text-muted-foreground">Activity</h3>
+		<ConsistencyGrid workoutDates={data.workoutDates} />
+	</div>
 </div>

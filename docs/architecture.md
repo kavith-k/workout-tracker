@@ -44,6 +44,8 @@ src/
 static/                    # PWA icons, favicon
 drizzle/                   # Generated migrations
 e2e/                       # Playwright E2E tests
+scripts/
+  seed-test-data.mjs       # Wipe DB and populate with 2 years of sample data
 ```
 
 ## Routes
@@ -54,9 +56,9 @@ e2e/                       # Playwright E2E tests
 | `/workout/start`               | Form action to create session and redirect     |
 | `/workout/[sessionId]`         | Active workout logging interface               |
 | `/workout/[sessionId]/summary` | Post-workout summary with PRs and stats        |
-| `/history`                     | Past workouts by date (default view)           |
-| `/history/by-exercise`         | History grouped by exercise                    |
+| `/history`                     | Past workouts by date with infinite scroll     |
 | `/history/[sessionId]`         | Single workout session details                 |
+| `/api/history`                 | GET endpoint for paginated history (infinite scroll) |
 | `/programs`                    | List and manage programmes                     |
 | `/programs/new`                | Create new programme                           |
 | `/programs/[programId]`        | Edit existing programme                        |
@@ -95,6 +97,16 @@ Days and exercises within the programme form are reordered via **drag-and-drop**
 ### Stale Workout Cleanup
 
 The root layout server load calls `closeStaleWorkouts()` on every page load. Any `in_progress` session older than 4 hours is auto-completed with unlogged exercises marked as `skipped`. This prevents abandoned workouts from blocking new ones.
+
+## Test Data
+
+To populate the database with realistic sample data for development or testing:
+
+```bash
+node scripts/seed-test-data.mjs
+```
+
+This deletes the existing database, runs migrations to recreate the schema, then seeds ~240 completed workout sessions spanning 2 years (Feb 2024 -- Feb 2026) with progressive overload, sporadic scheduling, and occasional skipped exercises.
 
 ## Key Design Decisions
 
