@@ -1,13 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createTestDb } from '../test-helper';
-import {
-	getSessionsByDate,
-	getSessionDetail,
-	getHistoryByExercise,
-	getExerciseHistory,
-	deleteSession,
-	deleteExerciseLog
-} from './history';
+import { getSessionsByDate, getSessionDetail, deleteSession, deleteExerciseLog } from './history';
 import {
 	startWorkout,
 	getWorkoutSession,
@@ -16,7 +9,7 @@ import {
 	skipExercise
 } from './workouts';
 import { createProgram, addWorkoutDay, addDayExercise, setActiveProgram } from './programs';
-import { exercises, exerciseLogs, setLogs, workoutSessions } from '../schema';
+import { exerciseLogs, setLogs, workoutSessions } from '../schema';
 import { eq } from 'drizzle-orm';
 
 describe('history queries', () => {
@@ -205,194 +198,6 @@ describe('history queries', () => {
 			expect(detail.exerciseLogs).toHaveLength(2);
 			expect(detail.exerciseLogs[0].status).toBe('logged');
 			expect(detail.exerciseLogs[1].status).toBe('skipped');
-		});
-	});
-
-	describe('getHistoryByExercise', () => {
-		it('returns empty array when no history exists', () => {
-			const result = getHistoryByExercise(db);
-
-			expect(result).toEqual([]);
-		});
-
-		it('returns exercises with session count and last performed date', () => {
-			const { day } = setupProgramWithDay('PPL', 'Push', ['Bench Press']);
-
-			completeWorkoutWithSets(day.id, [
-				{ exerciseName: 'Bench Press', sets: [{ weight: 60, reps: 10 }] }
-			]);
-			completeWorkoutWithSets(day.id, [
-				{ exerciseName: 'Bench Press', sets: [{ weight: 70, reps: 8 }] }
-			]);
-
-			const result = getHistoryByExercise(db);
-
-			expect(result).toHaveLength(1);
-			expect(result[0].name).toBe('Bench Press');
-			expect(result[0].sessionCount).toBe(2);
-			expect(result[0].lastPerformed).toBeDefined();
-		});
-
-		it('orders by exercise name alphabetically', () => {
-			const { day } = setupProgramWithDay('PPL', 'Push', [
-				'Overhead Press',
-				'Bench Press',
-				'Cable Flyes'
-			]);
-
-			completeWorkoutWithSets(day.id, [
-				{ exerciseName: 'Overhead Press', sets: [{ weight: 40, reps: 10 }] },
-				{ exerciseName: 'Bench Press', sets: [{ weight: 80, reps: 8 }] },
-				{ exerciseName: 'Cable Flyes', sets: [{ weight: 15, reps: 12 }] }
-			]);
-
-			const result = getHistoryByExercise(db);
-
-			expect(result).toHaveLength(3);
-			expect(result[0].name).toBe('Bench Press');
-			expect(result[1].name).toBe('Cable Flyes');
-			expect(result[2].name).toBe('Overhead Press');
-		});
-
-		it('counts distinct sessions (not duplicate entries)', () => {
-			const { day } = setupProgramWithDay('PPL', 'Push', ['Bench Press']);
-
-			// Complete one session (Bench Press appears once per session)
-			completeWorkoutWithSets(day.id, [
-				{ exerciseName: 'Bench Press', sets: [{ weight: 60, reps: 10 }] }
-			]);
-
-			const result = getHistoryByExercise(db);
-
-			expect(result).toHaveLength(1);
-			expect(result[0].sessionCount).toBe(1);
-		});
-
-		it('does not include exercises only in in-progress sessions', () => {
-			const { day } = setupProgramWithDay('PPL', 'Push', ['Bench Press']);
-
-			// Start but do not complete
-			const session = startWorkout(db, day.id);
-			const ws = getWorkoutSession(db, session.id)!;
-			updateSetLog(db, ws.exerciseLogs[0].sets[0].id, { weight: 80, reps: 8 });
-
-			const result = getHistoryByExercise(db);
-
-			expect(result).toEqual([]);
-		});
-	});
-
-	describe('getExerciseHistory', () => {
-		it('returns empty object when no history exists for exercise', () => {
-			setupProgramWithDay('PPL', 'Push', ['Bench Press']);
-			const ex = db.select().from(exercises).where(eq(exercises.name, 'Bench Press')).get()!;
-
-			const result = getExerciseHistory(db, ex.id);
-
-			expect(result.entries).toEqual([]);
-			expect(result.total).toBe(0);
-		});
-
-		it('returns historical logs for a specific exercise', () => {
-			const { day } = setupProgramWithDay('PPL', 'Push', ['Bench Press']);
-
-			completeWorkoutWithSets(day.id, [
-				{ exerciseName: 'Bench Press', sets: [{ weight: 60, reps: 10 }] }
-			]);
-			completeWorkoutWithSets(day.id, [
-				{ exerciseName: 'Bench Press', sets: [{ weight: 70, reps: 8 }] }
-			]);
-
-			const ex = db.select().from(exercises).where(eq(exercises.name, 'Bench Press')).get()!;
-			const result = getExerciseHistory(db, ex.id);
-
-			expect(result.entries).toHaveLength(2);
-			expect(result.total).toBe(2);
-			expect(result.entries[0].programName).toBe('PPL');
-			expect(result.entries[0].dayName).toBe('Push');
-		});
-
-		it('includes sets data', () => {
-			const { day } = setupProgramWithDay('PPL', 'Push', ['Bench Press'], 3);
-
-			completeWorkoutWithSets(day.id, [
-				{
-					exerciseName: 'Bench Press',
-					sets: [
-						{ weight: 60, reps: 10 },
-						{ weight: 70, reps: 8 },
-						{ weight: 80, reps: 5 }
-					]
-				}
-			]);
-
-			const ex = db.select().from(exercises).where(eq(exercises.name, 'Bench Press')).get()!;
-			const result = getExerciseHistory(db, ex.id);
-
-			expect(result.entries).toHaveLength(1);
-			expect(result.entries[0].sets).toHaveLength(3);
-			expect(result.entries[0].sets[0].weight).toBe(60);
-			expect(result.entries[0].sets[0].reps).toBe(10);
-			expect(result.entries[0].sets[1].weight).toBe(70);
-			expect(result.entries[0].sets[2].weight).toBe(80);
-		});
-
-		it('orders by completedAt descending', () => {
-			const { day } = setupProgramWithDay('PPL', 'Push', ['Bench Press']);
-
-			completeWorkoutWithSets(day.id, [
-				{ exerciseName: 'Bench Press', sets: [{ weight: 60, reps: 10 }] }
-			]);
-			completeWorkoutWithSets(day.id, [
-				{ exerciseName: 'Bench Press', sets: [{ weight: 70, reps: 8 }] }
-			]);
-
-			const ex = db.select().from(exercises).where(eq(exercises.name, 'Bench Press')).get()!;
-			const result = getExerciseHistory(db, ex.id);
-
-			expect(result.entries).toHaveLength(2);
-			expect(result.entries[0].completedAt.getTime()).toBeGreaterThanOrEqual(
-				result.entries[1].completedAt.getTime()
-			);
-		});
-
-		it('respects pagination', () => {
-			const { day } = setupProgramWithDay('PPL', 'Push', ['Bench Press']);
-
-			for (let i = 0; i < 5; i++) {
-				completeWorkoutWithSets(day.id, [
-					{ exerciseName: 'Bench Press', sets: [{ weight: 60 + i * 5, reps: 10 }] }
-				]);
-			}
-
-			const ex = db.select().from(exercises).where(eq(exercises.name, 'Bench Press')).get()!;
-
-			const page1 = getExerciseHistory(db, ex.id, 1, 2);
-			const page2 = getExerciseHistory(db, ex.id, 2, 2);
-			const page3 = getExerciseHistory(db, ex.id, 3, 2);
-
-			expect(page1.entries).toHaveLength(2);
-			expect(page1.total).toBe(5);
-			expect(page2.entries).toHaveLength(2);
-			expect(page3.entries).toHaveLength(1);
-		});
-
-		it('includes skipped entries', () => {
-			const { day } = setupProgramWithDay('PPL', 'Push', ['Bench Press', 'OHP']);
-
-			const session = startWorkout(db, day.id);
-			const ws = getWorkoutSession(db, session.id)!;
-
-			// Log Bench Press, skip OHP
-			updateSetLog(db, ws.exerciseLogs[0].sets[0].id, { weight: 80, reps: 8 });
-			skipExercise(db, ws.exerciseLogs[1].id);
-			completeWorkout(db, session.id);
-
-			const ohpEx = db.select().from(exercises).where(eq(exercises.name, 'OHP')).get()!;
-			const result = getExerciseHistory(db, ohpEx.id);
-
-			expect(result.entries).toHaveLength(1);
-			expect(result.entries[0].status).toBe('skipped');
 		});
 	});
 

@@ -3,6 +3,7 @@ import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
 import {
 	getWorkoutSession,
+	getPrescribedSetCounts,
 	updateSetLog,
 	addAdhocExercise,
 	addSetToExerciseLog,
@@ -38,7 +39,9 @@ export const load: PageServerLoad = async ({ params }) => {
 		}
 	}
 
-	return { session, progressiveOverload };
+	const prescribedSetCounts = getPrescribedSetCounts(db, sessionId);
+
+	return { session, progressiveOverload, prescribedSetCounts };
 };
 
 export const actions: Actions = {
@@ -117,7 +120,10 @@ export const actions: Actions = {
 		const sessionId = Number(formData.get('sessionId'));
 		if (isNaN(sessionId)) return fail(400, { error: 'Invalid session ID' });
 
-		completeWorkout(db, sessionId);
+		const result = completeWorkout(db, sessionId);
+		if ('cancelled' in result && result.cancelled) {
+			redirect(303, '/?cancelled=1');
+		}
 		redirect(303, `/workout/${sessionId}/summary`);
 	}
 };

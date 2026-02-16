@@ -1,4 +1,4 @@
-import { eq, and, asc, desc, lt, isNotNull, max, sql } from 'drizzle-orm';
+import { eq, and, asc, desc, lt, gte, isNotNull, max, sql } from 'drizzle-orm';
 import {
 	workoutSessions,
 	exerciseLogs,
@@ -119,6 +119,39 @@ export function startWorkout(db: Db, workoutDayId: number) {
 	}
 
 	return session;
+}
+
+export function getPrescribedSetCounts(db: Db, sessionId: number): Record<number, number> {
+	const session = db.select().from(workoutSessions).where(eq(workoutSessions.id, sessionId)).get();
+	if (!session?.workoutDayId) return {};
+
+	const dayExs = db
+		.select({
+			exerciseId: dayExercises.exerciseId,
+			setsCount: dayExercises.setsCount
+		})
+		.from(dayExercises)
+		.where(eq(dayExercises.workoutDayId, session.workoutDayId))
+		.all();
+
+	const exerciseIdToSets: Record<number, number> = {};
+	for (const de of dayExs) {
+		exerciseIdToSets[de.exerciseId] = de.setsCount;
+	}
+
+	const logs = db
+		.select({ id: exerciseLogs.id, exerciseId: exerciseLogs.exerciseId })
+		.from(exerciseLogs)
+		.where(eq(exerciseLogs.sessionId, sessionId))
+		.all();
+
+	const result: Record<number, number> = {};
+	for (const log of logs) {
+		if (log.exerciseId && exerciseIdToSets[log.exerciseId] != null) {
+			result[log.id] = exerciseIdToSets[log.exerciseId];
+		}
+	}
+	return result;
 }
 
 export function getWorkoutSession(db: Db, sessionId: number): WorkoutSession | null {
@@ -252,7 +285,10 @@ export function removeSetFromExerciseLog(db: Db, setLogId: number) {
 	return db.delete(setLogs).where(eq(setLogs.id, setLogId)).run();
 }
 
-export function completeWorkout(db: Db, sessionId: number) {
+export function completeWorkout(
+	db: Db,
+	sessionId: number
+): { cancelled: true } | (typeof workoutSessions.$inferSelect & { cancelled?: false }) {
 	// Mark any exercise logs that have no filled sets as skipped
 	const logs = db
 		.select()
@@ -264,7 +300,7 @@ export function completeWorkout(db: Db, sessionId: number) {
 		const filledSets = db
 			.select()
 			.from(setLogs)
-			.where(and(eq(setLogs.exerciseLogId, log.id), isNotNull(setLogs.weight)))
+			.where(and(eq(setLogs.exerciseLogId, log.id), isNotNull(setLogs.reps)))
 			.all();
 
 		if (filledSets.length === 0) {
@@ -272,12 +308,36 @@ export function completeWorkout(db: Db, sessionId: number) {
 		}
 	}
 
+	// Check if any exercise still has status='logged' (i.e. has at least one set with reps)
+	const loggedExercises = db
+		.select()
+		.from(exerciseLogs)
+		.where(and(eq(exerciseLogs.sessionId, sessionId), eq(exerciseLogs.status, 'logged')))
+		.all();
+
+	if (loggedExercises.length === 0) {
+		// No exercises were logged -- cancel the workout by deleting all data
+		const allLogs = db
+			.select()
+			.from(exerciseLogs)
+			.where(eq(exerciseLogs.sessionId, sessionId))
+			.all();
+
+		for (const log of allLogs) {
+			db.delete(setLogs).where(eq(setLogs.exerciseLogId, log.id)).run();
+		}
+		db.delete(exerciseLogs).where(eq(exerciseLogs.sessionId, sessionId)).run();
+		db.delete(workoutSessions).where(eq(workoutSessions.id, sessionId)).run();
+
+		return { cancelled: true };
+	}
+
 	return db
 		.update(workoutSessions)
 		.set({ status: 'completed', completedAt: new Date() })
 		.where(eq(workoutSessions.id, sessionId))
 		.returning()
-		.get();
+		.get()!;
 }
 
 export function getWorkoutSummary(db: Db, sessionId: number): WorkoutSummary | null {
@@ -472,6 +532,30 @@ export function closeStaleWorkouts(db: Db) {
 	}
 
 	return stale.length;
+}
+
+export function getCompletedWorkoutDates(db: Db, since?: Date): string[] {
+	const conditions = [
+		eq(workoutSessions.status, 'completed'),
+		isNotNull(workoutSessions.completedAt)
+	];
+	if (since) conditions.push(gte(workoutSessions.completedAt, since));
+
+	const rows = db
+		.select({ completedAt: workoutSessions.completedAt })
+		.from(workoutSessions)
+		.where(and(...conditions))
+		.all();
+
+	return rows
+		.filter((r) => r.completedAt != null)
+		.map((r) => {
+			const d = r.completedAt!;
+			const year = d.getFullYear();
+			const month = String(d.getMonth() + 1).padStart(2, '0');
+			const day = String(d.getDate()).padStart(2, '0');
+			return `${year}-${month}-${day}`;
+		});
 }
 
 export function updateExerciseUnitPreference(db: Db, exerciseId: number, unit: 'kg' | 'lbs') {

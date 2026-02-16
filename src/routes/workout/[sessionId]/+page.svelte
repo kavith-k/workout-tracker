@@ -67,6 +67,7 @@
 		<WorkoutWizard
 			exerciseLogs={data.session.exerciseLogs}
 			progressiveOverload={data.progressiveOverload}
+			prescribedSetCounts={data.prescribedSetCounts}
 			onfinish={() => (stopDialogOpen = true)}
 			onaddexercise={() => (adhocDialogOpen = true)}
 		/>

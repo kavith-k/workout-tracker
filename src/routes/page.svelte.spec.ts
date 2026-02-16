@@ -10,7 +10,8 @@ describe('/+page.svelte', () => {
 				data: {
 					activeProgram: null,
 					lastWorkout: null,
-					inProgressWorkout: null
+					inProgressWorkout: null,
+					workoutDates: []
 				}
 			}
 		});
