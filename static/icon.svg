@@ -1,0 +1,18 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+	<!-- Black background -->
+	<rect width="512" height="512" fill="#000000"/>
+
+	<!-- Dumbbell icon in brand green -->
+	<g fill="#6BE428">
+		<!-- Left outer plate -->
+		<rect x="72" y="166" width="46" height="180" rx="14"/>
+		<!-- Left inner plate -->
+		<rect x="118" y="196" width="36" height="120" rx="10"/>
+		<!-- Grip bar -->
+		<rect x="154" y="240" width="204" height="32" rx="16"/>
+		<!-- Right inner plate -->
+		<rect x="358" y="196" width="36" height="120" rx="10"/>
+		<!-- Right outer plate -->
+		<rect x="394" y="166" width="46" height="180" rx="14"/>
+	</g>
+</svg>
