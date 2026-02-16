@@ -182,8 +182,11 @@ test.describe.serial('Workout Flow', () => {
 		const circleCount = await page.getByTestId('wizard-progress-bar').locator('button').count();
 		await page.getByTestId(`progress-circle-${circleCount - 1}`).click();
 		await page.getByTestId('wizard-finish-btn').click();
+		await expect(page.getByText('Finish Workout?')).toBeVisible();
 		await page.getByTestId('confirm-stop-btn').click();
-		await expect(page.getByTestId('workout-summary')).toBeVisible();
+
+		// No exercises were logged, so the workout is cancelled and redirects to home
+		await expect(page).toHaveURL('/?cancelled=1');
 	});
 
 	test('shows congratulatory message when all exercises are completed', async ({ page }) => {
