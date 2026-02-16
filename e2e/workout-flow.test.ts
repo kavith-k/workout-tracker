@@ -186,7 +186,8 @@ test.describe.serial('Workout Flow', () => {
 		await page.getByTestId('confirm-stop-btn').click();
 
 		// No exercises were logged, so the workout is cancelled and redirects to home
-		await expect(page).toHaveURL('/?cancelled=1');
+		await expect(page).toHaveURL('/');
+		await expect(page.getByTestId('workout-cancelled-banner')).toBeVisible();
 	});
 
 	test('shows congratulatory message when all exercises are completed', async ({ page }) => {
