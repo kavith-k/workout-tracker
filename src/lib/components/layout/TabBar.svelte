@@ -23,7 +23,7 @@
 >
 	<div
 		class="mx-auto flex max-w-lg items-stretch justify-around"
-		style="padding-bottom: env(safe-area-inset-bottom, 0px);"
+		style="padding-bottom: max(env(safe-area-inset-bottom, 0px), 8px);"
 	>
 		{#each tabs as tab (tab.href)}
 			{@const active = isActive(tab.href)}
