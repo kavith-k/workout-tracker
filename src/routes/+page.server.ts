@@ -25,9 +25,7 @@ export const load: PageServerLoad = async () => {
 		}
 	}
 
-	const oneYearAgo = new Date();
-	oneYearAgo.setDate(oneYearAgo.getDate() - 52 * 7);
-	const workoutDates = getCompletedWorkoutDates(db, oneYearAgo);
+	const workoutDates = getCompletedWorkoutDates(db);
 
 	return { activeProgram, lastWorkout, workoutDates };
 };

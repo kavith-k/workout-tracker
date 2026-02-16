@@ -534,17 +534,17 @@ export function closeStaleWorkouts(db: Db) {
 	return stale.length;
 }
 
-export function getCompletedWorkoutDates(db: Db, since: Date): string[] {
+export function getCompletedWorkoutDates(db: Db, since?: Date): string[] {
+	const conditions = [
+		eq(workoutSessions.status, 'completed'),
+		isNotNull(workoutSessions.completedAt)
+	];
+	if (since) conditions.push(gte(workoutSessions.completedAt, since));
+
 	const rows = db
 		.select({ completedAt: workoutSessions.completedAt })
 		.from(workoutSessions)
-		.where(
-			and(
-				eq(workoutSessions.status, 'completed'),
-				isNotNull(workoutSessions.completedAt),
-				gte(workoutSessions.completedAt, since)
-			)
-		)
+		.where(and(...conditions))
 		.all();
 
 	return rows

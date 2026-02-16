@@ -2,7 +2,6 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
-	import { ArrowDown } from '@lucide/svelte';
 
 	interface SetData {
 		id: number;
@@ -60,6 +59,16 @@
 		if (!prev) return;
 		if (prev.weight != null) onupdateset(index, 'weight', prev.weight);
 		if (prev.reps != null) onupdateset(index, 'reps', prev.reps);
+	}
+
+	function getPreviousValues(index: number): { weight: string; reps: string } | null {
+		if (index === 0) return null;
+		const prev = exercise.sets[index - 1];
+		if (!prev || (prev.weight == null && prev.reps == null)) return null;
+		return {
+			weight: prev.weight != null ? String(prev.weight) : '',
+			reps: prev.reps != null ? String(prev.reps) : ''
+		};
 	}
 
 	function formatDate(date: Date): string {
@@ -131,7 +140,7 @@
 
 	<div class="mt-3 space-y-2">
 		<div
-			class="grid grid-cols-[2rem_1fr_1fr_auto] items-center gap-2 text-xs font-medium text-muted-foreground"
+			class="grid grid-cols-[2rem_1fr_1fr_2rem] items-center gap-2 text-xs font-medium text-muted-foreground"
 		>
 			<span>Set</span>
 			<span class="flex items-center gap-1">
@@ -149,13 +158,27 @@
 			<span></span>
 		</div>
 		{#each exercise.sets as set, i (set.id)}
-			<div class="grid grid-cols-[2rem_1fr_1fr_auto] items-center gap-2" data-testid="set-row-{i}">
-				<span class="text-center text-sm text-muted-foreground">
-					{set.setNumber}
-				</span>
+			{@const prev = canCopyDown(i) ? getPreviousValues(i) : null}
+			<div class="grid grid-cols-[2rem_1fr_1fr_2rem] items-center gap-2" data-testid="set-row-{i}">
+				{#if canCopyDown(i)}
+					<button
+						type="button"
+						class="flex size-8 items-center justify-center rounded-md text-sm font-medium text-primary transition-colors active:bg-primary/10"
+						onclick={() => handleCopyDown(i)}
+						data-testid="copy-down-{i}"
+						title="Tap to copy from set above"
+					>
+						{set.setNumber}
+					</button>
+				{:else}
+					<span class="text-center text-sm text-muted-foreground">
+						{set.setNumber}
+					</span>
+				{/if}
 				<Input
 					type="number"
 					value={set.weight ?? ''}
+					placeholder={prev?.weight ?? ''}
 					step="0.5"
 					min="0"
 					inputmode="decimal"
@@ -168,6 +191,7 @@
 				<Input
 					type="number"
 					value={set.reps ?? ''}
+					placeholder={prev?.reps ?? ''}
 					min="0"
 					inputmode="numeric"
 					onchange={(e) => {
@@ -176,23 +200,12 @@
 					}}
 					data-testid="reps-input-{i}"
 				/>
-				{#if canCopyDown(i)}
+				{#if canRemoveSet(i)}
 					<Button
 						type="button"
 						variant="ghost"
 						size="icon-sm"
-						class="min-h-11 min-w-11 text-muted-foreground"
-						onclick={() => handleCopyDown(i)}
-						data-testid="copy-down-{i}"
-					>
-						<ArrowDown class="size-4" />
-					</Button>
-				{:else if canRemoveSet(i)}
-					<Button
-						type="button"
-						variant="ghost"
-						size="icon-sm"
-						class="min-h-11 min-w-11 text-muted-foreground"
+						class="size-8 text-muted-foreground"
 						onclick={() => onremoveset(i)}
 						data-testid="remove-set-{i}"
 					>
