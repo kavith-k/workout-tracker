@@ -2,12 +2,26 @@
 	/* eslint-disable svelte/prefer-svelte-reactivity -- Date used for computation only, not reactive state */
 	let { workoutDates }: { workoutDates: string[] } = $props();
 
-	const WEEKS = 16;
 	const DAYS = ['Mon', '', 'Wed', '', 'Fri', '', ''];
+	// Column step: cell (size-3.25 = 0.8125rem) + gap (gap-0.75 = 0.1875rem) = 1rem = 16px
+	// Label column + gap: ~2rem = 32px
+	const COL_STEP_PX = 16;
+	const LABEL_PX = 32;
+	const MAX_WEEKS = 52;
+
+	let containerWidth = $state(0);
+
+	let weekCount = $derived(
+		containerWidth > 0
+			? Math.max(4, Math.min(MAX_WEEKS, Math.floor((containerWidth - LABEL_PX) / COL_STEP_PX)))
+			: 0
+	);
 
 	let workoutSet = $derived(new Set(workoutDates));
 
 	let grid = $derived.by(() => {
+		if (weekCount === 0) return [];
+
 		const today = new Date();
 		const todayStr = formatDate(today);
 
@@ -17,16 +31,16 @@
 		const currentMonday = new Date(today);
 		currentMonday.setDate(today.getDate() - mondayOffset);
 
-		// Go back WEEKS-1 more weeks to get the start
+		// Go back weekCount-1 more weeks to get the start
 		const startMonday = new Date(currentMonday);
-		startMonday.setDate(currentMonday.getDate() - (WEEKS - 1) * 7);
+		startMonday.setDate(currentMonday.getDate() - (weekCount - 1) * 7);
 
 		const weeks: Array<{
 			days: Array<{ date: string; hasWorkout: boolean; isToday: boolean; isFuture: boolean }>;
 			monthLabel: string | null;
 		}> = [];
 
-		for (let w = 0; w < WEEKS; w++) {
+		for (let w = 0; w < weekCount; w++) {
 			const weekStart = new Date(startMonday);
 			weekStart.setDate(startMonday.getDate() + w * 7);
 
@@ -78,43 +92,45 @@
 	}
 </script>
 
-<div class="overflow-x-auto">
-	<div class="inline-grid gap-0.75" style="grid-template-columns: auto repeat({WEEKS}, 1fr);">
-		<!-- Month labels row -->
-		<div></div>
-		{#each grid as week, wi (wi)}
-			<div class="flex h-4 items-end text-[10px] leading-none text-muted-foreground">
-				{#if week.monthLabel}
-					{week.monthLabel}
-				{/if}
-			</div>
-		{/each}
-
-		<!-- Grid rows (one per day of week) -->
-		{#each DAYS as dayLabel, dayIndex (dayIndex)}
-			<!-- Day label -->
-			<div
-				class="flex items-center justify-end pr-1 text-[10px] leading-none text-muted-foreground"
-			>
-				{dayLabel}
-			</div>
-
-			<!-- Day cells -->
+<div bind:clientWidth={containerWidth} class="pb-1">
+	{#if weekCount > 0}
+		<div class="inline-grid gap-0.75" style="grid-template-columns: auto repeat({weekCount}, 1fr);">
+			<!-- Month labels row -->
+			<div></div>
 			{#each grid as week, wi (wi)}
-				{@const day = week.days[dayIndex]}
-				<div
-					class="size-3.25 rounded-[3px] {day.isFuture
-						? 'bg-transparent'
-						: day.isToday
-							? day.hasWorkout
-								? 'bg-primary ring-1 ring-primary/50 ring-offset-1 ring-offset-background'
-								: 'bg-muted ring-1 ring-muted-foreground/30 ring-offset-1 ring-offset-background'
-							: day.hasWorkout
-								? 'bg-primary'
-								: 'bg-muted'}"
-					title={day.date}
-				></div>
+				<div class="flex h-4 items-end text-[10px] leading-none text-muted-foreground">
+					{#if week.monthLabel}
+						{week.monthLabel}
+					{/if}
+				</div>
 			{/each}
-		{/each}
-	</div>
+
+			<!-- Grid rows (one per day of week) -->
+			{#each DAYS as dayLabel, dayIndex (dayIndex)}
+				<!-- Day label -->
+				<div
+					class="flex items-center justify-end pr-1 text-[10px] leading-none text-muted-foreground"
+				>
+					{dayLabel}
+				</div>
+
+				<!-- Day cells -->
+				{#each grid as week, wi (wi)}
+					{@const day = week.days[dayIndex]}
+					<div
+						class="size-3.25 rounded-[3px] {day.isFuture
+							? 'bg-transparent'
+							: day.isToday
+								? day.hasWorkout
+									? 'bg-primary ring-1 ring-primary/50 ring-offset-1 ring-offset-background'
+									: 'bg-muted ring-1 ring-muted-foreground/30 ring-offset-1 ring-offset-background'
+								: day.hasWorkout
+									? 'bg-primary'
+									: 'bg-muted'}"
+						title={day.date}
+					></div>
+				{/each}
+			{/each}
+		</div>
+	{/if}
 </div>

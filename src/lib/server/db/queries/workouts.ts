@@ -1,4 +1,4 @@
-import { eq, and, asc, desc, lt, isNotNull, max, sql } from 'drizzle-orm';
+import { eq, and, asc, desc, lt, gte, isNotNull, max, sql } from 'drizzle-orm';
 import {
 	workoutSessions,
 	exerciseLogs,
@@ -542,7 +542,7 @@ export function getCompletedWorkoutDates(db: Db, since: Date): string[] {
 			and(
 				eq(workoutSessions.status, 'completed'),
 				isNotNull(workoutSessions.completedAt),
-				sql`${workoutSessions.completedAt} >= ${since.getTime()}`
+				gte(workoutSessions.completedAt, since)
 			)
 		)
 		.all();
