@@ -72,11 +72,11 @@
 	}
 
 	function formatDate(date: Date): string {
-		return new Date(date).toLocaleDateString('en-GB', {
-			day: 'numeric',
-			month: 'short',
-			year: 'numeric'
-		});
+		const d = new Date(date);
+		const day = d.getDate();
+		const month = d.toLocaleDateString('en-GB', { month: 'short' });
+		const year = String(d.getFullYear()).slice(-2);
+		return `${day} ${month} '${year}`;
 	}
 
 	function formatPreviousSets(sets: Array<{ weight: number; reps: number; unit: string }>): string {
@@ -112,19 +112,16 @@
 	</div>
 
 	{#if overload}
-		<div class="mt-2 space-y-0.5 text-xs text-muted-foreground">
+		<div class="mt-3 space-y-1 text-xs text-muted-foreground">
 			{#if overload.previous}
 				<p data-testid="previous-hint">
-					Previous ({formatDate(overload.previous.date)}): {formatPreviousSets(
-						overload.previous.sets
-					)}
+					Prev. ({formatDate(overload.previous.date)}): {formatPreviousSets(overload.previous.sets)}
 				</p>
 			{/if}
 			{#if overload.max}
 				<p data-testid="max-hint">
-					Max: {overload.max.weight}{overload.max.unit} x {overload.max.reps} reps ({formatDate(
-						overload.max.date
-					)})
+					Max. ({formatDate(overload.max.date)}):
+					{overload.max.weight}{overload.max.unit} x {overload.max.reps} reps
 				</p>
 			{/if}
 			{#if currentVolume > 0 || previousVolume > 0}
@@ -138,7 +135,7 @@
 		</div>
 	{/if}
 
-	<div class="mt-3 space-y-2">
+	<div class="mt-4 space-y-2">
 		<div
 			class="grid grid-cols-[2rem_1fr_1fr_2rem] items-center gap-2 text-xs font-medium text-muted-foreground"
 		>
